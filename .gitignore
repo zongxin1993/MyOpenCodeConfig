@@ -1,0 +1,23 @@
+# Machine-specific config and secrets
+models.json
+models.local.json
+opencode.json
+opencode.jsonc
+auth.json
+auth.*.json
+service.json
+.workflow-generated-state.json
+.env
+.env.*
+!.env.example
+*.pem
+*.key
+backups/
+.local/
+upstream/
+# Runtime output
+__pycache__/
+*.py[cod]
+.venv/
+*.log
+.DS_Store

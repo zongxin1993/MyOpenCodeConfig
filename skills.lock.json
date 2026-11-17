@@ -1,0 +1,14 @@
+{
+  "superpowers": {
+    "repository": "https://github.com/obra/superpowers.git",
+    "commit": "22f0b463e7a5e579904dd6211a520321035526f7"
+  },
+  "mattpocock": {
+    "repository": "https://github.com/mattpocock/skills.git",
+    "commit": "5863806dd4e15c63174bee4e7515a4256792ecfa"
+  },
+  "addy": {
+    "repository": "https://github.com/addyosmani/agent-skills.git",
+    "commit": "39b723ceebf81474d0557c1fecd01eddab585563"
+  }
+}

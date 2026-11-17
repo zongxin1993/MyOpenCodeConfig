@@ -1,0 +1,16 @@
+{
+  "version": 1,
+  "defaults": {
+    "cloud": {
+      "provider": "openai",
+      "model": "gpt-6.1-sol",
+      "variant": "high"
+    },
+    "local": {
+      "provider": "local",
+      "model": "your-local-model",
+      "variant": null
+    }
+  },
+  "roles": {}
+}
