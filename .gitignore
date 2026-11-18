@@ -21,3 +21,8 @@ __pycache__/
 .venv/
 *.log
 .DS_Store
+
+# Per-project quality evidence and private registration
+.quality/
+quality-settings.json
+project-quality.local.json

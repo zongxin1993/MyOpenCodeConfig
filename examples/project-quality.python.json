@@ -1,0 +1,22 @@
+{
+  "version": 1,
+  "lanes": [
+    {
+      "id": "tests",
+      "argv": [
+        "python3",
+        "-m",
+        "unittest",
+        "discover",
+        "-s",
+        "tests",
+        "-v"
+      ],
+      "parser": "unittest",
+      "timeout": 5,
+      "min_checks": 1,
+      "environment": "Current Python, stdlib unittest",
+      "required": true
+    }
+  ]
+}

@@ -1,0 +1,33 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "requirements",
+  "type": "array",
+  "items": {
+    "type": "object",
+    "properties": {
+      "id": {
+        "type": "string",
+        "pattern": "[A-Za-z][A-Za-z0-9_.-]*"
+      },
+      "source": {
+        "type": "string",
+        "minLength": 1
+      },
+      "statement": {
+        "type": "string",
+        "minLength": 1
+      },
+      "required": {
+        "type": "boolean"
+      }
+    },
+    "required": [
+      "id",
+      "source",
+      "statement",
+      "required"
+    ],
+    "additionalProperties": false
+  },
+  "minItems": 1
+}

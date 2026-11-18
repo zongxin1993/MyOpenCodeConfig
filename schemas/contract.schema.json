@@ -1,0 +1,204 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "contract",
+  "type": "object",
+  "properties": {
+    "version": {
+      "enum": [
+        1
+      ],
+      "type": "integer"
+    },
+    "requirements": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string",
+            "pattern": "[A-Za-z][A-Za-z0-9_.-]*"
+          },
+          "source": {
+            "type": "string",
+            "minLength": 1
+          },
+          "statement": {
+            "type": "string",
+            "minLength": 1
+          },
+          "required": {
+            "type": "boolean"
+          }
+        },
+        "required": [
+          "id",
+          "source",
+          "statement",
+          "required"
+        ],
+        "additionalProperties": false
+      },
+      "minItems": 1
+    },
+    "plan": {
+      "type": "object",
+      "properties": {
+        "risk": {
+          "type": "string",
+          "enum": [
+            "low",
+            "medium",
+            "high"
+          ]
+        },
+        "tasks": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "properties": {
+              "id": {
+                "type": "string",
+                "pattern": "[A-Za-z][A-Za-z0-9_.-]*"
+              },
+              "requirements": {
+                "type": "array",
+                "items": {
+                  "type": "string",
+                  "pattern": "[A-Za-z][A-Za-z0-9_.-]*"
+                },
+                "minItems": 1
+              }
+            },
+            "required": [
+              "id",
+              "requirements"
+            ],
+            "additionalProperties": false
+          },
+          "minItems": 1
+        },
+        "acceptance": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "properties": {
+              "id": {
+                "type": "string",
+                "pattern": "[A-Za-z][A-Za-z0-9_.-]*"
+              },
+              "requirement": {
+                "type": "string",
+                "pattern": "[A-Za-z][A-Za-z0-9_.-]*"
+              },
+              "criterion": {
+                "type": "string",
+                "minLength": 1
+              },
+              "lane": {
+                "type": "string",
+                "pattern": "[A-Za-z][A-Za-z0-9_.-]*"
+              }
+            },
+            "required": [
+              "id",
+              "requirement",
+              "criterion",
+              "lane"
+            ],
+            "additionalProperties": false
+          },
+          "minItems": 1
+        },
+        "architecture": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "properties": {
+              "id": {
+                "type": "string",
+                "pattern": "[A-Za-z][A-Za-z0-9_.-]*"
+              },
+              "statement": {
+                "type": "string",
+                "minLength": 1
+              },
+              "lane": {
+                "type": "string",
+                "pattern": "[A-Za-z][A-Za-z0-9_.-]*"
+              }
+            },
+            "required": [
+              "id",
+              "statement",
+              "lane"
+            ],
+            "additionalProperties": false
+          },
+          "minItems": 1
+        },
+        "unknowns": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "properties": {
+              "question": {
+                "type": "string",
+                "minLength": 1
+              },
+              "critical": {
+                "type": "boolean"
+              },
+              "resolved": {
+                "type": "boolean"
+              }
+            },
+            "required": [
+              "question",
+              "critical",
+              "resolved"
+            ],
+            "additionalProperties": false
+          },
+          "minItems": 0
+        }
+      },
+      "required": [
+        "risk",
+        "tasks",
+        "acceptance",
+        "architecture",
+        "unknowns"
+      ],
+      "additionalProperties": false
+    },
+    "approvals": {
+      "type": "object",
+      "properties": {
+        "design": {
+          "type": "string",
+          "minLength": 1
+        },
+        "plan": {
+          "type": "string",
+          "minLength": 1
+        },
+        "simulated": {
+          "type": "boolean"
+        }
+      },
+      "required": [
+        "design",
+        "plan",
+        "simulated"
+      ],
+      "additionalProperties": false
+    }
+  },
+  "required": [
+    "version",
+    "requirements",
+    "plan",
+    "approvals"
+  ],
+  "additionalProperties": false
+}

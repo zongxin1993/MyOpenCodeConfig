@@ -1,0 +1,8 @@
+{
+  "repository": "https://github.com/bmad-code-org/BMAD-METHOD.git",
+  "commit": "e435a22574fe55722841086e5566420178b98df3",
+  "skill": "skills/method/bmad-code-review",
+  "renderer": "skills/core-tools/bmad/scripts/render_skill.py",
+  "release_line": "v7 preview pinned; not stable v6.12",
+  "render_dependencies": {"Jinja2": "3.1.6", "MarkupSafe": "3.0.3"}
+}

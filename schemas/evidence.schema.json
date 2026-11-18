@@ -1,0 +1,139 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "evidence",
+  "type": "object",
+  "properties": {
+    "version": {
+      "type": "integer",
+      "enum": [
+        1
+      ]
+    },
+    "contract_id": {
+      "type": "string",
+      "minLength": 1
+    },
+    "policy_id": {
+      "type": "string",
+      "minLength": 1
+    },
+    "snapshot_id": {
+      "type": "string",
+      "minLength": 1
+    },
+    "lanes": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string",
+            "pattern": "[A-Za-z][A-Za-z0-9_.-]*"
+          },
+          "status": {
+            "type": "string",
+            "enum": [
+              "PASS",
+              "FAIL",
+              "NOT_RUN"
+            ]
+          },
+          "reason": {
+            "type": "string"
+          },
+          "command": {
+            "type": "array",
+            "items": {
+              "type": "string",
+              "minLength": 1
+            },
+            "minItems": 1
+          },
+          "cwd": {
+            "type": "string",
+            "minLength": 1
+          },
+          "exit_code": {
+            "type": [
+              "integer",
+              "null"
+            ]
+          },
+          "checks": {
+            "type": "integer",
+            "minimum": 0
+          },
+          "skipped": {
+            "type": "integer",
+            "minimum": 0
+          },
+          "failures": {
+            "type": "integer",
+            "minimum": 0
+          },
+          "started": {
+            "type": "number",
+            "minimum": 0
+          },
+          "finished": {
+            "type": "number",
+            "minimum": 0
+          },
+          "runtime": {
+            "type": "string",
+            "minLength": 1
+          },
+          "before": {
+            "type": "string",
+            "minLength": 1
+          },
+          "after": {
+            "type": "string",
+            "minLength": 1
+          },
+          "log": {
+            "type": "string",
+            "minLength": 1
+          },
+          "log_sha256": {
+            "type": "string",
+            "minLength": 1
+          }
+        },
+        "required": [
+          "id",
+          "status",
+          "reason",
+          "command",
+          "cwd",
+          "exit_code",
+          "checks",
+          "skipped",
+          "failures",
+          "started",
+          "finished",
+          "runtime",
+          "before",
+          "after",
+          "log",
+          "log_sha256"
+        ],
+        "additionalProperties": false
+      },
+      "minItems": 0
+    },
+    "run_id": {
+      "type": "string",
+      "pattern": "[a-f0-9]{32}"
+    }
+  },
+  "required": [
+    "version",
+    "contract_id",
+    "policy_id",
+    "snapshot_id",
+    "lanes",
+    "run_id"
+  ],
+  "additionalProperties": false
+}

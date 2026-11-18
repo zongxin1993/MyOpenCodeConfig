@@ -4,7 +4,7 @@
 
 你用普通语言提出需求，确认设计和计划，之后由主协调者自动委派。正常工作不需要输入阶段命令，也不用自己在模型之间传递审计意见。
 
-本仓库保存脱敏配置模板、生成器和模型映射示例；不是 OpenCode 插件，不修改 Desktop 源码。GrillMe 与 Superpowers 作为技能依赖安装。
+本仓库保存脱敏配置模板、生成器和模型映射示例；不是 OpenCode 插件，不修改 Desktop 源码。GrillMe 与 Superpowers 作为技能依赖安装；质量扩展提供独立计划审查、固定版 BMAD 只读审计与证据门禁。
 
 ## 功能与流程
 
@@ -13,10 +13,12 @@
   → cloud-workflow 使用 GrillMe 澄清需求
   → 用户确认需求／设计
   → 使用 Superpowers 写计划
+  → 独立 cloud-plan-review 审查计划并修正
   → 用户确认计划
   → local-worker 编写代码、测试并运行验证
-  → cloud-review 独立审计实际文件和证据
-      ├─ 通过 → 原 local-worker 归档 → 云端协调者交付
+  → 运行登记的检查、保存版本化证据
+  → cloud-review 独立审计（中高风险另有结构／测试审查）
+      ├─ quality_gate 通过 → 原 local-worker 归档 → 再核验 → 交付
       └─ 不通过 → 原 local-worker 修复、复验 → cloud-review 复审
 ```
 
@@ -36,11 +38,14 @@
 | `cloud-design` | 独立需求与设计入口 | cloud |
 | `cloud-plan` | 独立计划入口 | cloud |
 | `cloud-review` | 独立审计与复审，只读、不运行 shell | cloud |
+| `cloud-plan-review` | 开发前独立审查计划与验收 | cloud |
+| `cloud-structure-review` | 中高风险结构／架构专项审查 | cloud |
+| `cloud-test-review` | 中高风险测试有效性与证据审查 | cloud |
 | `local-worker` | 唯一实施子代理，代码、测试、修复、归档 | local |
 | `local-build` | 独立实施备用入口 | local |
 | `local-inspect` | 只读事实调查 | local |
 
-OpenCode 原生的 `build/general/explore` 及维护角色跟随 local 默认模型；七个工作流角色可分别覆盖模型。
+OpenCode 原生的 `build/general/explore` 及维护角色跟随 local 默认模型；十个工作流角色可分别覆盖模型。
 
 ## 从零开始配置
 
@@ -218,3 +223,11 @@ python3 -m unittest discover -s tests -v
 生成器仅依赖 Python 标准库。当前测试与实际工作流验证范围见 [验证说明](docs/VALIDATION.md)。
 
 本仓库不包含第三方技能源文件；上游项目及许可见 [依赖说明](docs/SKILLS.md)。本仓库模板只定义协作方式，不保证任意模型、任意工具调用或任意 OpenCode 版本都兼容。
+
+## 质量扩展：计划与审计门禁
+
+详见[完整质量工作流安装与使用](docs/QUALITY_WORKFLOW.md)。先完成基础配置，再用 `setup_quality.py` 预览/备份安装、明确登记工程与验证策略。只读质量MCP不能执行shell，实际检查由本地worker运行；BMAD固定版资源由官方renderer预生成，运行时不启用项目hooks或另一套总协调。
+
+必要需求映射、dirty/untracked快照、真实非空测试、最新运行与各轮原始审计共同决定PASS。旧成功不能覆盖后续失败；历史阻塞必须显式复验关闭。风险/修复价值/延期条件独立记录，严重问题不能被平均分抵消。
+
+该扩展的源码与验证说明在[VALIDATION](docs/VALIDATION.md)，不包含个人Provider配置、API密钥、NAS地址或真实会话。远端业务仓库的强制合并门禁需单独配置，本地PASS不等于不可绕过安全隔离。

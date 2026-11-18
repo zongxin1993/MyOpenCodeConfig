@@ -89,3 +89,7 @@ code-review-and-quality
 原始技能可能写有 `superpowers:writing-plans` 之类的引用。角色模板已要求在 OpenCode 中转换为 `writing-plans` 等裸 ID，并使用当前宿主提供的 `shell/subagent/read/edit/patch` 工具。技能脚本和引用文件保留相对路径；不要只复制 SKILL.md。
 
 参考：[OpenCode 技能发现规则](https://opencode.ai/docs/skills/)、[Superpowers 官方 OpenCode 安装说明](https://github.com/obra/superpowers/blob/main/.opencode/INSTALL.md)。技能原文和许可始终以上游仓库为准。
+
+## 质量扩展技能与BMAD
+
+quality-planning / quality-review 来自本仓库，由 setup_quality.py 安装并保留完整运行目录。BMAD审计上游来源、精确提交、渲染依赖见 integrations/bmad/lock.json；不会把原始BMAD技能全局自动激活。完整步骤见 QUALITY_WORKFLOW.md。不要混用稳定v6.12安装器与本扩展固定的v7预览资源。

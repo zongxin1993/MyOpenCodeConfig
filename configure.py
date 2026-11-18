@@ -12,8 +12,8 @@ import tempfile
 from datetime import datetime, timezone
 
 ROOT = Path(__file__).resolve().parent
-ROLES = ('cloud-workflow','cloud-design','cloud-plan','cloud-review','local-worker','local-build','local-inspect')
-TITLES = dict(zip(ROLES, ('自动协调','需求澄清与设计','编写计划','独立审计与复审','实施、测试与修复','独立实施入口','只读事实调查')))
+ROLES = ('cloud-workflow','cloud-design','cloud-plan','cloud-review','local-worker','local-build','local-inspect','cloud-plan-review','cloud-structure-review','cloud-test-review')
+TITLES = dict(zip(ROLES, ('自动协调','需求澄清与设计','编写计划','独立审计与复审','实施、测试与修复','独立实施入口','只读事实调查','独立计划审查','结构与架构审查','测试有效性审查')))
 MAINTENANCE = ('build','general','explore','compaction','title','summary')
 BINDING_KEYS = {'provider','model','variant','variants'}
 
@@ -78,7 +78,7 @@ At every phase start, before delegation, after real successful dispatch, on each
 
 Use separate Markdown bullet rows with a blank line after the heading. The configured coordinator above is the default for this role; a child must inherit the actual coordinator binding from its parent handoff. In standalone cloud-design/cloud-plan/local-build sessions, the primary role is the coordinator. If the selected session model differs from the configured identity, disclose the actual model; if unavailable, report an identity mismatch and stop, never print a false identity or silently switch providers. A configured variant is not proof of an observed request parameter.
 Requirements/design use the current primary role; writing plans in cloud-workflow remains on cloud-workflow. Implementation, interleaved TDD testing, repairs and finalization use local-worker; independent audit/re-audit use cloud-review; fact discovery uses local-inspect. Standalone local-build implements directly with its own binding. Use the exact binding above for the role actually executing that phase. Final delivery must identify the primary reply model as executor, and name the last child's model separately if useful.
-Stages: 需求澄清 / 需求设计确认 / 编写计划 / 计划确认 / 实施与测试(TDD) / 独立审计 / 修复与复验 / 独立复审 / 归档收尾 / 最终交付. Status: 开始 / 等待确认 / 待派发 / 已派发 / 结果已返回 / 需要修复 / 复审通过 / 已完成 / 失败或阻塞.
+Stages: 需求澄清 / 需求设计确认 / 编写计划 / 独立计划审查 / 计划确认 / 实施与测试(TDD) / 独立审计 / 结构审查 / 测试审查 / 门禁核验 / 修复与复验 / 独立复审 / 归档收尾 / 最终交付. Status: 开始 / 等待确认 / 待派发 / 已派发 / 结果已返回 / 需要修复 / 复审通过 / 已完成 / 失败或阻塞.
 Before subagent use 待派发. Say 已派发 only after a real successful tool response returns sessionID. In each delegation description prefix [<target role> | <exact target binding>] and the phase. Include all actual role bindings and this visibility rule in the handoff. On child callback, the MAIN coordinator must relay a fresh block identifying the child's executor and whether the report is awaiting independent review. Tests passed does not mean overall completion. Child reports also show coordinator and their own executor. Native child cards/input pickers are not a global model switch; these are workflow messages, not system-attested badges.
 '''
 
@@ -110,7 +110,7 @@ def compile_config(base, spec, templates, previous=None):
         found=[v for v in variants if v.get('id')==item['value']['id']]
         require(not found or found==[item['value']],'Managed variant was modified outside generator: '+item['value']['id'])
         if found:model['variants']=[v for v in variants if v.get('id')!=item['value']['id']]
-    state={'version':1,'variants':[],'roles':{role:reference(b) for role,b in bindings.items()}}
+    state={'version':1,'variants':[],'roles':{role:reference(b) for role,b in bindings.items()},'permissions':{}}
     for (pid,mid,vid),value in sorted(generated.items()):
         require(pid in out.get('providers',{}),'Configure custom variant provider privately first: '+pid)
         model=out['providers'][pid].setdefault('models',{}).setdefault(mid,{})
@@ -126,6 +126,14 @@ def compile_config(base, spec, templates, previous=None):
         agents['local-worker']=old_worker
     for role in ROLES:
         permissions=copy.deepcopy(agents.get(role,{}).get('permissions',templates['agents'][role].get('permissions',[])))
+        legacy = templates.get('permission_migrations', {}).get(role)
+        managed = (permissions == templates['agents'][role].get('permissions', [])
+                   or legacy is not None and permissions == legacy
+                   or permissions in templates.get('permission_revisions', {}).get(role, [])
+                   or role in (previous or {}).get('permissions', {}) and permissions == previous['permissions'][role])
+        if managed:
+            permissions = copy.deepcopy(templates['agents'][role].get('permissions', []))
+            state['permissions'][role] = copy.deepcopy(permissions)
         for permission in permissions:
             if permission.get('action')=='subagent' and permission.get('resource')=='strata-worker':
                 permission['resource']='local-worker'

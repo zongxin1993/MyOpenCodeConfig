@@ -1,0 +1,43 @@
+{
+  "version": 1,
+  "requirements": [
+    {
+      "id": "REQ-1",
+      "source": "User requirement",
+      "statement": "Reject non-integer input",
+      "required": true
+    }
+  ],
+  "plan": {
+    "risk": "low",
+    "tasks": [
+      {
+        "id": "TASK-1",
+        "requirements": [
+          "REQ-1"
+        ]
+      }
+    ],
+    "acceptance": [
+      {
+        "id": "AC-1",
+        "requirement": "REQ-1",
+        "criterion": "unittest observes rejection",
+        "lane": "tests"
+      }
+    ],
+    "architecture": [
+      {
+        "id": "ARCH-1",
+        "statement": "Module stays independent",
+        "lane": "tests"
+      }
+    ],
+    "unknowns": []
+  },
+  "approvals": {
+    "design": "Replace with actual approved design quote",
+    "plan": "PENDING",
+    "simulated": false
+  }
+}

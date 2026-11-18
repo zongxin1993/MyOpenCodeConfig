@@ -10,5 +10,9 @@
   "addy": {
     "repository": "https://github.com/addyosmani/agent-skills.git",
     "commit": "39b723ceebf81474d0557c1fecd01eddab585563"
+  },
+  "bmad": {
+    "repository": "https://github.com/bmad-code-org/BMAD-METHOD.git",
+    "commit": "e435a22574fe55722841086e5566420178b98df3"
   }
 }

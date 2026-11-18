@@ -1,0 +1,9 @@
+[workflow]
+interactive = false
+fixes = "handoff"
+persistent_facts = ["OpenCode host adapter governs tools, persistence and evidence: no shell, no source/spec/plan writes; verify every alleged gap; missing lenses are incomplete; allow zero findings. Root cloud-workflow dispatches flat sibling review sessions because host depth may be one; reviewer children never spawn children. Root returns actual sibling reports for triage. Reports return to root parent for verbatim archival only in .quality/reviews; local-worker retains execution logs and repairs."]
+handoff_delivery = "Return the original report and schema-valid JSON to the native OpenCode parent. Do not write approved plans or any source files."
+[[workflow.thorough_lenses]]
+id = "blind-hunter"
+name = "Blind Hunter disabled: no finding quota"
+instruction = ""

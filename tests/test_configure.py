@@ -4,6 +4,8 @@ sys.path.insert(0,str(Path(__file__).resolve().parents[1]))
 import configure as c
 
 T={'agents':{'cloud-workflow':{'mode':'primary','system':'Delegate local-worker; review cloud-review.','permissions':[{'action':'subagent','resource':'local-worker','effect':'allow'}]},'cloud-design':{'mode':'primary','system':'Design'},'cloud-plan':{'mode':'primary','system':'Plan'},'cloud-review':{'mode':'all','system':'Review'},'local-worker':{'mode':'subagent','system':'Implement'},'local-build':{'mode':'primary','system':'Build'},'local-inspect':{'mode':'subagent','system':'Inspect'}},'commands':{'implement':{'agent':'local-build','model':'old','template':'Implement'}}}
+for name in ('cloud-plan-review','cloud-structure-review','cloud-test-review'):
+ T['agents'][name]={'mode':'subagent','system':'Read only review'}
 def spec():return {'version':1,'defaults':{'cloud':{'provider':'openai','model':'cloud-model','variant':'high'},'local':{'provider':'local','model':'local-model','variant':'workflow-balanced','variants':[{'id':'workflow-balanced','body':{'reasoning_budget_tokens':2048,'max_tokens':24576}}]}},'roles':{}}
 def base():return {'providers':{'local':{'settings':{'apiKey':'PRIVATE_SENTINEL'},'body':{'max_tokens':24576},'models':{'local-model':{'limit':{'context':131072}}}}},'agents':{'strata-worker':{'model':'old'},'unrelated':{'system':'keep'}},'commands':{'mine':{'template':'mine'}},'compaction':{'auto':True}}
 class ConfigureTests(unittest.TestCase):

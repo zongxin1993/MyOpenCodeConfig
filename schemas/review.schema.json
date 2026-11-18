@@ -1,0 +1,332 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "review",
+  "type": "object",
+  "properties": {
+    "version": {
+      "type": "integer",
+      "enum": [
+        1
+      ]
+    },
+    "kind": {
+      "type": "string",
+      "enum": [
+        "plan",
+        "code",
+        "structure",
+        "tests"
+      ]
+    },
+    "contract_id": {
+      "type": "string",
+      "minLength": 1
+    },
+    "snapshot_id": {
+      "type": "string"
+    },
+    "reviewer": {
+      "type": "object",
+      "properties": {
+        "agent": {
+          "type": "string",
+          "minLength": 1
+        },
+        "model": {
+          "type": "string",
+          "minLength": 1
+        },
+        "session": {
+          "type": "string",
+          "minLength": 1
+        }
+      },
+      "required": [
+        "agent",
+        "model",
+        "session"
+      ],
+      "additionalProperties": false
+    },
+    "summary": {
+      "type": "string",
+      "minLength": 1
+    },
+    "findings": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string",
+            "pattern": "[A-Za-z][A-Za-z0-9_.-]*"
+          },
+          "category": {
+            "type": "string",
+            "minLength": 1
+          },
+          "location": {
+            "type": "string",
+            "minLength": 1
+          },
+          "title": {
+            "type": "string",
+            "minLength": 1
+          },
+          "evidence": {
+            "type": "string",
+            "minLength": 1
+          },
+          "consequence": {
+            "type": "string",
+            "minLength": 1
+          },
+          "scope": {
+            "type": "string",
+            "minLength": 1
+          },
+          "confidence": {
+            "type": "string",
+            "enum": [
+              "confirmed",
+              "probable",
+              "unverified"
+            ]
+          },
+          "severity": {
+            "type": "string",
+            "enum": [
+              "critical",
+              "high",
+              "medium",
+              "low",
+              "nit"
+            ]
+          },
+          "origin": {
+            "type": "string",
+            "enum": [
+              "introduced",
+              "worsened",
+              "preexisting"
+            ]
+          },
+          "disposition": {
+            "type": "string",
+            "enum": [
+              "fix",
+              "decision",
+              "investigate",
+              "defer"
+            ]
+          },
+          "status": {
+            "type": "string",
+            "enum": [
+              "open",
+              "resolved"
+            ]
+          },
+          "defer": {
+            "type": [
+              "object",
+              "null"
+            ],
+            "properties": {
+              "owner": {
+                "type": "string",
+                "minLength": 1
+              },
+              "until": {
+                "type": "string",
+                "minLength": 1
+              },
+              "reason": {
+                "type": "string",
+                "minLength": 1
+              },
+              "accepted_by": {
+                "type": "string",
+                "minLength": 1
+              },
+              "trigger": {
+                "type": "string",
+                "minLength": 1
+              }
+            },
+            "required": [
+              "owner",
+              "until",
+              "reason",
+              "accepted_by",
+              "trigger"
+            ],
+            "additionalProperties": false
+          },
+          "repair": {
+            "type": "object",
+            "properties": {
+              "value": {
+                "type": "string",
+                "minLength": 1
+              },
+              "effort": {
+                "type": "string",
+                "minLength": 1
+              },
+              "regression_risk": {
+                "type": "string",
+                "minLength": 1
+              },
+              "verification": {
+                "type": "string",
+                "minLength": 1
+              }
+            },
+            "required": [
+              "value",
+              "effort",
+              "regression_risk",
+              "verification"
+            ],
+            "additionalProperties": false
+          },
+          "risk": {
+            "type": "object",
+            "properties": {
+              "impact": {
+                "type": [
+                  "integer",
+                  "null"
+                ],
+                "minimum": 0,
+                "maximum": 5
+              },
+              "likelihood": {
+                "type": [
+                  "integer",
+                  "null"
+                ],
+                "minimum": 0,
+                "maximum": 5
+              },
+              "breadth": {
+                "type": [
+                  "integer",
+                  "null"
+                ],
+                "minimum": 0,
+                "maximum": 5
+              },
+              "time": {
+                "type": [
+                  "integer",
+                  "null"
+                ],
+                "minimum": 0,
+                "maximum": 5
+              }
+            },
+            "required": [
+              "impact",
+              "likelihood",
+              "breadth",
+              "time"
+            ],
+            "additionalProperties": false
+          },
+          "resolution_evidence": {
+            "type": "string",
+            "minLength": 1
+          }
+        },
+        "required": [
+          "id",
+          "category",
+          "location",
+          "title",
+          "evidence",
+          "consequence",
+          "scope",
+          "confidence",
+          "severity",
+          "origin",
+          "disposition",
+          "status",
+          "defer",
+          "repair",
+          "risk"
+        ],
+        "additionalProperties": false
+      },
+      "minItems": 0
+    },
+    "rejections": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string",
+            "pattern": "[A-Za-z][A-Za-z0-9_.-]*"
+          },
+          "reason": {
+            "type": "string",
+            "minLength": 1
+          }
+        },
+        "required": [
+          "id",
+          "reason"
+        ],
+        "additionalProperties": false
+      },
+      "minItems": 0
+    },
+    "complete": {
+      "type": "boolean"
+    },
+    "round": {
+      "type": "integer",
+      "minimum": 1
+    },
+    "closed_findings": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string",
+            "minLength": 1
+          },
+          "reason": {
+            "type": "string",
+            "minLength": 1
+          },
+          "evidence": {
+            "type": "string",
+            "minLength": 1
+          }
+        },
+        "required": [
+          "id",
+          "reason",
+          "evidence"
+        ],
+        "additionalProperties": false
+      }
+    }
+  },
+  "required": [
+    "version",
+    "kind",
+    "contract_id",
+    "snapshot_id",
+    "reviewer",
+    "summary",
+    "findings",
+    "rejections",
+    "complete"
+  ],
+  "additionalProperties": false
+}
