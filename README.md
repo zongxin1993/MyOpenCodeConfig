@@ -244,3 +244,6 @@ python3 -m unittest discover -s tests -v
 必要需求映射、dirty/untracked快照、真实非空测试、最新运行与各轮原始审计共同决定PASS。旧成功不能覆盖后续失败；历史阻塞必须显式复验关闭。风险/修复价值/延期条件独立记录，严重问题不能被平均分抵消。
 
 该扩展的源码与验证说明在[VALIDATION](docs/VALIDATION.md)，不包含个人Provider配置、API密钥、NAS地址或真实会话。远端业务仓库的强制合并门禁需单独配置，本地PASS不等于不可绕过安全隔离。
+
+
+Worktree 原工程访问已自动适配：同一仓库主 checkout 可通过原生 `read` 只读核对，开发与测试留在 linked worktree。原工程写回被阻断，敏感读取和搜索另有限制；macOS shell 使用系统沙箱，保留原命令权限检查。共享 Git 元数据例外、跨目录硬链接和其他平台支持范围见 [插件集成说明](docs/PLUGIN_INTEGRATION.md#worktree-规则)。

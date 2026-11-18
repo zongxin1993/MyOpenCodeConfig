@@ -1,0 +1,7 @@
+#!/bin/sh
+# The original command remains visible to OpenCode's native permission parser.
+# Profile and inner shell are injected by the trusted per-location plugin.
+set -eu
+: "${MYOPENCODE_SOURCE_RO_PROFILE:?source protection profile missing}"
+: "${MYOPENCODE_SOURCE_RO_SHELL:?source protection shell missing}"
+exec /usr/bin/sandbox-exec -p "$MYOPENCODE_SOURCE_RO_PROFILE" "$MYOPENCODE_SOURCE_RO_SHELL" "$@"

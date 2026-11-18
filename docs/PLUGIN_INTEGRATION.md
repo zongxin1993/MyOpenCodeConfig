@@ -43,7 +43,11 @@ Plannotator 使用 `user-managed`，planningAgents 为 cloud-workflow/design/pla
 
 工程登记依据同一 Git 来源继承最近适用的原生/通用策略，不能从 portable 默默降级为 native。已登记多个冲突策略时停止；可执行策略中明显指向原目录的绝对参数（含 --option=/path）拒绝继承，要求先适配。没有声称能静态识别任意脚本内部的间接访问。
 
-这是工作流校验，不是 OS 文件系统沙箱。已在 worktree 的进程仍可能通过任意脚本访问其他目录；实施规范禁止此行为，验收要对比原目录状态及任务范围。插件不会自动合并、推送业务工程或删除 worktree。交付保留工作区路径、branch或detached HEAD、提交/差异和验证证据，合并按任务授权单独进行。
+原工程只读适配由 worktree-policy 自动完成，不需要每个新工程增加绝对路径白名单。根据当前 Git worktree 注册记录、公共 Git 目录和双向 backlink 找到同一仓库的主 checkout；普通非 Git 目录不获得授权，伪造或不安全 Git 关系停止。首次会话请求在配置角色加载后追加权限，保留模型、Provider 和已有显式外部目录拒绝。
+
+原工程通过原生 `read` 读取文件或分页列目录；不自动复制未提交内容，裸 commit 也不能代表 dirty 基线。新增原工程访问仅适用于托管 cloud-* / local-* 角色，不开放其他工程、同名前缀目录或整个人目录。原工程的 edit 被拒绝，敏感文件（.env*、.git、.ssh、.aws、.config、pem/key）及符号链接越界读取被拒绝。原工程 grep/glob 和覆盖其父目录的搜索停止，改用 read：当前宿主 grep 不检查每个结果的 read 权限，不能以允许目录搜索换取凭据泄漏。其他目录的既有权限仍以原配置为准；这不是任意命名秘密的通用识别器。
+
+macOS 的模型 shell 在创建时切换到同方言名的隔离启动器，内部使用 `/usr/bin/sandbox-exec`；原始 command 不变，继续经过宿主原来的命令和外部目录权限检查。沙箱禁止 shell 读取或修改主 checkout 文件，即便脚本使用相对路径、变量或符号链接。原工程内容通过直接 read 获取，worktree 文件仍可读写；共享 Git 公共目录保留读写，用于 worktree 提交、对象与 refs，**不承诺 Git 元数据只读或秘密识别**。这种路径隔离不支持已存在的跨目录硬链接：worktree 中若有与原工程共享 inode 的文件，必须先改成独立副本；普通 Git worktree 不自动创建这类硬链接。这并非整个宿主的访问锁：手工进程、尚未初始化插件的底层 shell API、其他应用/外部服务及既有进程不受此钩子接管；不要把系统保护关闭或外部代理当绕过通道。当前版本只认证 macOS；其他平台 shell 拒绝执行，无不受保护的降级。迁移 Linux/Windows 需先实现并验证对应进程隔离。插件不会自动合并、推送业务工程或删除 worktree。交付保留工作区路径、branch或detached HEAD、提交/差异和验证证据，合并按任务授权单独进行。
 
 ## 验收小任务
 

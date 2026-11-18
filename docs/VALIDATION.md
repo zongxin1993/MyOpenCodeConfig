@@ -92,3 +92,12 @@ python3 configure.py --models models.local.json
 机器交叉核验确认：所有实际云端assistant请求均使用所选low；唯一local-worker全程为固定本地模型、无新增命名variant；所有子会话实际目录均为同一linked worktree；原checkout的HEAD/状态保持，代码恢复为首次GREEN内容；独立原目录派发负向探针被WORKTREE_REQUIRED拦截。Provider、compaction、日常默认模型、本地/维护角色绑定及原有工程策略保留；没有加入Mem/DCP。完整原生消息、回执、OAuth与私密配置留在本机，不随仓库发布。
 
 这是应用工作流隔离，不是OS沙箱；不保证任意脚本不会访问原目录。验收对原目录作实际对比。不宣称Windows、新机器登录、任意插件组合、大工程压力或所有未来版本已经认证。测试worktree为detached HEAD，未提交/合并业务夹具；配置工程另行提交发布，不混淆两种工件。
+
+
+## 原工程只读适配回归
+
+新增通用 worktree 来源只读策略，不写入任何实际工程路径。当前 68 项 Python unittest 通过，其中包含 Node 插件测试；新增来源测试覆盖真实 Git 主目录/linked/嵌套目录、伪造 backlink、相邻路径不授权、模型/自定义拒绝保留、直接工具边界、敏感目标和符号链接解析。macOS 子进程实测覆盖原始命令/方言保留、假 .env shell 读取失败、相对路径、变量、符号链接写回失败，worktree 内写入及 Git 提交成功。非 macOS 不执行此 OS 集成用例，产品 shell 本身失败关闭；不能把 CI 的跳过当跨平台通过。
+
+真实 OpenCode 测试选择云端 gpt-6.1-sol#low，未更改日常默认：当前真实任务 worktree 的原工程 read（此前 external_directory 拒绝）已成功；一次性工程原文件可读，worktree 文档原生 patch 成功。插件初始化后的原生 shell 另测相对路径和变量写回退出 1，worktree 写入退出 0，原文件内容保持。模型主动拒绝尝试的原目录文档写入、假 .env、grep 和无关目录读取，不冒充实际工具拒绝；这些文件权限负例另由确定性 hook/规则测试验证。
+
+调试时还发现底层 shell API 在未初始化该 location 插件时不运行钩子；这条通道不是模型会话的权限认证路径。实际模型会话先初始化插件。详见 PLUGIN_INTEGRATION.md 的保护范围和共享 Git 元数据例外。实际业务工程未运行开发、测试或迁移未提交源码；测试数据和原始会话只留本机。备份后部署，原有 Provider、上下文压缩、云/本地默认绑定与命名推理档位另作一致性比较。

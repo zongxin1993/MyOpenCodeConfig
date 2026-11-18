@@ -37,3 +37,7 @@ class WorktreeRegistrationTests(unittest.TestCase):
  def test_real_worktree_policy_node_suite(self):
   r=subprocess.run(['node','--test','tests/test_worktree_policy.mjs'],capture_output=True,text=True)
   self.assertEqual(r.returncode,0,r.stdout+r.stderr)
+
+ def test_source_readonly_node_suite(self):
+  r=subprocess.run(['node','--test','tests/test_source_readonly.mjs'],capture_output=True,text=True)
+  self.assertEqual(r.returncode,0,r.stdout+r.stderr)

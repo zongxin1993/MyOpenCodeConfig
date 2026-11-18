@@ -15,7 +15,8 @@ async function fixture(){
 }
 function sdk(f){
  const hooks={};const tools={};const sessions=new Map([['root',{id:'root',projectID:'p',agent:'cloud-workflow',location:{directory:f.main}}],['old',{id:'old',parentID:'root',agent:'local-worker',location:{directory:f.main}}]]);
- let creates=0;const ctx={session:{get:async({sessionID})=>sessions.get(sessionID),move:async({sessionID,directory})=>{sessions.get(sessionID).location.directory=directory;},hook:async(n,fn)=>hooks[n]=fn},
+ let creates=0;const ctx={location:{directory:f.main},
+    shell:{hook:async()=>{}},agent:{transform:async fn=>fn({list:()=>[],update:()=>{}})},permission:{hook:async(n,fn)=>hooks['permission.'+n]=fn},session:{get:async({sessionID})=>sessions.get(sessionID),move:async({sessionID,directory})=>{sessions.get(sessionID).location.directory=directory;},hook:async(n,fn)=>hooks[n]=fn},
  tool:{transform:async fn=>fn({add:t=>tools[t.name]=t}),hook:async(n,fn)=>hooks[n]=fn},
  worktree:{create:async()=>{creates++;return {directory:f.linked,branch:'fixture/task'};}}};
  return {ctx,hooks,tools,sessions,creates:()=>creates};
