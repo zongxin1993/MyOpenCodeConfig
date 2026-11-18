@@ -12,7 +12,7 @@
 
 提出需求 → GrillMe 澄清 → 确认需求/设计 → 云端写计划与契约 → fresh cloud-plan-review 检查并修正计划 → 确认计划 → local-worker 实施/TDD/检查 → 云端独立审计 → 原会话修复复验 → 复审 → quality_gate → 归档后再核验 → 最终交付。
 
-低风险仅必需 plan/code 两类审查；medium/high 还需 structure/tests。cloud-review 的 BMAD quick 审计仍通过真实独立子会话进行，专项视角按风险开启。所有 cloud-* 角色继承 models.local.json 的 cloud 默认模型/档位，可分别覆盖；local-* 沿用服务参数，无新增思考强度。
+低风险仅必需 plan/code 两类审查；medium/high 还需 structure/tests。cloud-review 的 BMAD quick 审计仍通过真实独立子会话进行，专项视角按风险开启。推荐 session 路由：所有 cloud-* 角色跟随当前主会话模型/档位，local-* 保持独立固定绑定、沿用服务参数，无新增思考强度。fixed 路由才使用映射文件的云端默认及逐角色覆盖；详见[模型路由](CONFIGURATION.md)。
 
 审查采用平级会话：主 cloud-workflow 直接派发 code、structure、tests，再收集原文并交代码审查综合裁决。审计子代理不再派子代理，兼容 Desktop 的单层深度限制；不会为此提高宿主深度或跳过必需视角。检查数量与批准方案冲突时停止并上报，不添加无用模块凑数量，策略变更需明确裁定。
 

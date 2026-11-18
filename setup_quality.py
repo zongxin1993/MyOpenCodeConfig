@@ -45,7 +45,7 @@ def prepare_runtime(source, render_python, destination):
         raise ValueError('BMAD checkout must be clean, official, and at the pinned commit')
     # The release name changes whenever shipped execution/protocol/skill resources change.
     paths = [ROOT / 'configure.py', ROOT / 'templates.json']
-    for folder in ['workflow', 'schemas', 'skills', 'integrations', 'examples']:
+    for folder in ['workflow', 'schemas', 'skills', 'integrations', 'examples', 'plugins']:
         paths += [p for p in (ROOT / folder).rglob('*') if p.is_file() and '__pycache__' not in p.parts and p.suffix != '.pyc']
     identity = hashlib.sha256()
     for p in sorted(paths):
@@ -62,7 +62,7 @@ def prepare_runtime(source, render_python, destination):
     if release.exists(): raise ValueError('Incomplete runtime directory; inspect before retrying')
     release.mkdir(parents=True)
     try:
-        for folder in ['workflow', 'schemas', 'examples', 'integrations']:
+        for folder in ['workflow', 'schemas', 'examples', 'integrations', 'plugins']:
             shutil.copytree(ROOT / folder, release / folder, ignore=shutil.ignore_patterns('__pycache__', '*.pyc'))
         # Keep complete supporting BMAD resources, never merely SKILL.md.
         for sub in ['skills/method/bmad-code-review', 'skills/core-tools/bmad/scripts']:
@@ -138,6 +138,14 @@ def _install(args):
                 'roles': generated['roles'], 'source_pin': read_json(ROOT / 'integrations/bmad/lock.json')['commit']}
     release, rendered = prepare_runtime(args.source, args.render_python,
                                         home / '.local/share/myopencodeconfig/quality')
+    if 'routing_plugin' in generated:
+        plugin = generated['routing_plugin']
+        old_package = plugin['package']
+        package = str(release / 'plugins/cloud-session-router')
+        for entry in compiled['plugins']:
+            if isinstance(entry, dict) and entry.get('package') == old_package:
+                entry['package'] = package
+        plugin['package'] = package
     for project in settings['projects']:
         for lane in project.get('policy', {}).get('lanes', []):
             lane['argv'] = [arg.replace('__QUALITY_RUNTIME__', str(release)) for arg in lane['argv']]

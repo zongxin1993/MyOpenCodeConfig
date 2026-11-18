@@ -4,7 +4,7 @@
 
 你用普通语言提出需求，确认设计和计划，之后由主协调者自动委派。正常工作不需要输入阶段命令，也不用自己在模型之间传递审计意见。
 
-本仓库保存脱敏配置模板、生成器和模型映射示例；不是 OpenCode 插件，不修改 Desktop 源码。GrillMe 与 Superpowers 作为技能依赖安装；质量扩展提供独立计划审查、固定版 BMAD 只读审计与证据门禁。
+本仓库保存脱敏配置模板、生成器和模型映射示例，并提供一个无额外依赖的 V2 云端会话路由插件，不修改 Desktop 源码。GrillMe 与 Superpowers 作为技能依赖安装；质量扩展提供独立计划审查、固定版 BMAD 只读审计与证据门禁。
 
 已有正式质量体系、要求任务材料留在上下文的工程，采用[仓库原生验证模式](docs/QUALITY_WORKFLOW.md#已有原生验收体系的工程)。云端/本地分工保持，验收沿用项目门禁；不在仓库另建协议或伪造通用PASS。下面的流程图描述显式配置通用机器门禁的项目；新工程自动接入默认采用原生模式。
 
@@ -49,11 +49,11 @@
 | `local-build` | 独立实施备用入口 | local |
 | `local-inspect` | 只读事实调查 | local |
 
-OpenCode 原生的 `build/general/explore` 及维护角色跟随 local 默认模型；十个工作流角色可分别覆盖模型。
+OpenCode 原生的 `build/general/explore` 及维护角色跟随 local 默认模型。推荐的 session 路由中，所有云端角色跟随主会话选择，本地角色仍可分别覆盖模型。
 
 ## 从零开始配置
 
-以下命令以 macOS／Linux、Python 3.9+ 和 Git 为例。已实际验证 OpenCode Desktop **2.3.0 / V2配置格式**，不兼容 V1 的旧字段。Windows 的原生安装和目录权限行为尚未验证。
+以下命令以 macOS／Linux、Python 3.9+、Node.js 20+（运行测试）和 Git 为例。已实际验证 OpenCode Desktop **2.3.0 / V2配置格式**，不兼容 V1 的旧字段。Windows 的原生安装和目录权限行为尚未验证。
 
 ### 1. 安装 OpenCode
 
@@ -124,6 +124,7 @@ PY
 ```json
 {
   "version": 1,
+  "routing": { "cloud_model": "session" },
   "defaults": {
     "cloud": {
       "provider": "openai",
@@ -136,15 +137,15 @@ PY
       "variant": null
     }
   },
-  "roles": {
-    "cloud-review": { "variant": "high" }
-  }
+  "roles": {}
 }
 ```
 
 `provider`、`model` 必须与 OpenCode／私密 Provider 配置匹配。示例云模型需在你的账号目录中实际可用，不可用就换成目录中的模型。云端档位按模型支持情况选择；本地 `variant` 保持 `null`，表示沿用已有配置，**不等于关闭原有思考**。
 
-`roles` 可留 `{}`，表示全部继承各组默认值。也可只覆盖某个角色的 `provider/model/variant`，例如让 `cloud-review` 使用另一云模型。完整规则见 [模型映射与生成](docs/CONFIGURATION.md)。
+`routing.cloud_model: "session"` 下，Desktop 当前会话所选的模型及推理档位用于云端规划、审计、复审，包括再次委派同一审查子会话；`defaults.cloud` 仅提供启动默认值。切换云端模型不会改变本地模型及其思考、输出参数。进行中的请求继续完成，后续委派才采用新选择。启用此模式时不能同时设置固定的云端角色覆盖。
+
+`roles` 可留 `{}`，也可覆盖本地角色。需要各云端角色固定不同模型时，改用 `routing.cloud_model: "fixed"`；旧映射未写 routing 时保持 fixed 行为。完整规则见 [模型映射与生成](docs/CONFIGURATION.md)。
 
 ### 7. 预览并应用
 

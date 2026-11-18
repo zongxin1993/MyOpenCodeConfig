@@ -64,16 +64,18 @@ def reference(binding):
     return binding['provider']+'/'+binding['model']+('#'+binding['variant'] if binding.get('variant') else '')
 
 
-def visibility(role, bindings):
+def visibility(role, bindings, session_cloud=False):
     coordinator=role if role in ('cloud-workflow','cloud-design','cloud-plan','local-build') else 'cloud-workflow'
-    identities='\n'.join('- '+name+': '+reference(bindings[name]) for name in ROLES)
+    def identity(name):
+        return 'current primary session selection (runtime identity)' if session_cloud and name.startswith('cloud-') else reference(bindings[name])
+    identities='\n'.join('- '+name+': '+identity(name) for name in ROLES)
     return '''\n\nMODEL VISIBILITY CONTRACT (generated from models.json):
 Actual configured role bindings (provider/model#variant):
 '''+identities+'''
 At every phase start, before delegation, after real successful dispatch, on each child result return, before approval questions and final delivery, emit this in the MAIN conversation, not reasoning or child-only text:
 **【<阶段>｜<状态>】**
 
-- 协调模型：`'''+reference(bindings[coordinator])+'''`
+- 协调模型：`'''+identity(coordinator)+'''`
 - 执行模型：`<actual executor provider/model#variant>`
 
 Use separate Markdown bullet rows with a blank line after the heading. The configured coordinator above is the default for this role; a child must inherit the actual coordinator binding from its parent handoff. In standalone cloud-design/cloud-plan/local-build sessions, the primary role is the coordinator. If the selected session model differs from the configured identity, disclose the actual model; if unavailable, report an identity mismatch and stop, never print a false identity or silently switch providers. A configured variant is not proof of an observed request parameter.
@@ -84,13 +86,19 @@ Before subagent use 待派发. Say 已派发 only after a real successful tool r
 
 
 def compile_config(base, spec, templates, previous=None):
-    require(isinstance(spec,dict) and not set(spec)-{'version','defaults','roles'},'Unknown specification fields')
+    require(isinstance(spec,dict) and not set(spec)-{'version','defaults','roles','routing'},'Unknown specification fields')
     require(spec.get('version')==1,'Unsupported version')
+    routing=spec.get('routing',{})
+    require(isinstance(routing,dict) and not set(routing)-{'cloud_model'},'Unknown routing fields')
+    require(routing.get('cloud_model','fixed') in ('fixed','session'),'Invalid cloud_model routing')
+    session_cloud=routing.get('cloud_model')=='session'
     defaults=spec.get('defaults',{})
     require(isinstance(defaults,dict) and set(defaults)=={'cloud','local'},'defaults must contain cloud and local')
     for b in defaults.values():validate_binding(b)
     overrides=spec.get('roles',{})
     require(isinstance(overrides,dict) and not set(overrides)-set(ROLES),'Unknown role')
+    require(not session_cloud or not any(value for role,value in overrides.items() if role.startswith('cloud-')),
+            'Session cloud routing conflicts with fixed cloud role overrides')
     bindings={}
     for role in ROLES:
         override=overrides.get(role,{})
@@ -111,6 +119,21 @@ def compile_config(base, spec, templates, previous=None):
         require(not found or found==[item['value']],'Managed variant was modified outside generator: '+item['value']['id'])
         if found:model['variants']=[v for v in variants if v.get('id')!=item['value']['id']]
     state={'version':1,'variants':[],'roles':{role:reference(b) for role,b in bindings.items()},'permissions':{}}
+    owned=(previous or {}).get('routing_plugin')
+    if owned:
+        plugins=out.get('plugins',[])
+        require(not any((p if isinstance(p,str) else p.get('package'))==owned['package'] and p!=owned for p in plugins),
+                'Managed routing plugin was modified outside generator')
+        out['plugins']=[p for p in plugins if p!=owned]
+    if session_cloud:
+        plugin={'package':str(ROOT/'plugins/cloud-session-router'),'options':{
+            'cloudRoles':[r for r in ROLES if r.startswith('cloud-')],
+            'localBindings':{r:reference(b) for r,b in bindings.items() if r.startswith('local-')}}}
+        require(not any((p if isinstance(p,str) else p.get('package'))==plugin['package'] for p in out.get('plugins',[])),
+                'Refusing to overwrite unowned routing plugin')
+        out.setdefault('plugins',[]).append(plugin)
+        state['routing_plugin']=copy.deepcopy(plugin)
+        state['roles'].update({r:'session' for r in ROLES if r.startswith('cloud-')})
     for (pid,mid,vid),value in sorted(generated.items()):
         require(pid in out.get('providers',{}),'Configure custom variant provider privately first: '+pid)
         model=out['providers'][pid].setdefault('models',{}).setdefault(mid,{})
@@ -139,15 +162,19 @@ def compile_config(base, spec, templates, previous=None):
                 permission['resource']='local-worker'
         agents[role]=copy.deepcopy(templates['agents'][role])
         agents[role]['permissions']=permissions
-        agents[role]['model']=reference(bindings[role])
-        agents[role]['description']='['+role+' | '+reference(bindings[role])+'] '+TITLES[role]
-        agents[role]['system']+=visibility(role,bindings)
+        dynamic=session_cloud and role.startswith('cloud-')
+        if not dynamic:agents[role]['model']=reference(bindings[role])
+        else:agents[role].pop('model',None)
+        agents[role]['description']='['+role+' | '+('session' if dynamic else reference(bindings[role]))+'] '+TITLES[role]
+        agents[role]['system']+=visibility(role,bindings,session_cloud)
     for name in MAINTENANCE:
         agents.setdefault(name,{})['model']=reference(defaults['local'])
     for name,template in templates.get('commands',{}).items():
         command=copy.deepcopy(template)
-        command['model']=reference(bindings[command['agent']])
-        command['description']='['+command['agent']+' | '+command['model']+'] '+TITLES[command['agent']]
+        dynamic=session_cloud and command['agent'].startswith('cloud-')
+        if not dynamic:command['model']=reference(bindings[command['agent']])
+        else:command.pop('model',None)
+        command['description']='['+command['agent']+' | '+('session' if dynamic else command['model'])+'] '+TITLES[command['agent']]
         out.setdefault('commands',{})[name]=command
     out['model']=reference(defaults['cloud']);out['default_agent']='cloud-workflow'
     # Detect forgotten references in active workflow definitions, not user history/other settings.

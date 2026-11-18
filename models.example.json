@@ -1,5 +1,6 @@
 {
   "version": 1,
+  "routing": { "cloud_model": "session" },
   "defaults": {
     "cloud": {
       "provider": "openai",
