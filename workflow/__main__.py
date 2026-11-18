@@ -15,6 +15,7 @@ def main():
         elif a.action == 'run': value = r.run(a.project, a.contract)
         else: value = r.gate(a.project, a.contract, a.evidence, a.review)
         print(json.dumps(value, ensure_ascii=False, indent=2))
+        if value.get('status') == 'REPOSITORY_NATIVE_REQUIRED': return 2
         if value.get('status') in ('BLOCKED', 'NEEDS_EVIDENCE') or any(l['status'] != 'PASS' for l in value.get('lanes', [])): return 1
         return 0
     except (ValueError, OSError, KeyError, TypeError) as exc:

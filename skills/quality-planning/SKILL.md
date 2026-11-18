@@ -7,6 +7,14 @@ Managed-By: MyOpenCodeConfig quality
 
 # Planning and evidence contract
 
+## Project mode preflight — before creating any file
+
+The root coordinator calls quality_info and resolves the current project in project_profiles before drafting artifacts. If its mode is repository-native, read its listed authorities and instructions. In that mode, the portable protocol below DOES NOT APPLY: no generated docs/superpowers spec/plan/contract, .quality ledger/reviews/evidence, synthetic contract/snapshot IDs, portable CLI execution or quality_gate PASS. Keep requirements, plans, approval quotes, original review findings and progress in the current task context or the repository-authorized system. These are not new repository authorities.
+
+Retain cloud planning/independent review and the same local worker for code/tests/repairs. Select actual checks from the repository rules and the task's real impact; existing native test/architecture/CI gates own acceptance. Preserve required independent review, finding IDs, severity/impact/confidence, repair value/cost/regression risk and explicit deferral decisions in task context. Report native evidence and missing lanes accurately; registration, a fingerprint check or REPOSITORY_NATIVE_REQUIRED is never a product PASS. Material plan changes follow the repository's approval rules. If native prepare/run/gate is called accidentally, it returns REPOSITORY_NATIVE_REQUIRED without executing or writing; do not retry with a fake contract or raise the snapshot limit. A repository requiring artifacts outside its source is not permission to write arbitrary external folders or expand tool access.
+
+For a portable project, continue the protocol below unchanged. Missing registration is a setup blocker, not permission to choose a weaker mode.
+
 Retain project governance and the existing two real approvals. Do not implement before the plan is approved. Facts, assumptions and unresolved questions are separate. A critical unknown requires investigation, not invented certainty.
 
 1. Read repository rules and actual interfaces/callers. Use GrillMe for unresolved business decisions. Write requirements with IDs, sources, observable behavior and boundaries. User confirms requirements/design.

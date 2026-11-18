@@ -45,6 +45,25 @@ python3 setup_quality.py --models models.local.json \
 
 ## 可读契约与机器校验
 
+### 已有原生验收体系的工程
+
+若工程要求任务计划与验收留在任务上下文，或已有正式质量体系，使用显式 `repository-native` 注册。不要为接入本工具在该工程另写一套规格、账本或验收 Authority，也不要通过放宽快照限制忽略大型工作区内容。
+
+在本机私密文件中写清接入说明，引用项目实际的规范和验证入口，不写凭据。示例：
+
+```sh
+python3 setup_quality.py --models models.local.json \
+  --source /absolute/path/bmad-source \
+  --render-python /absolute/path/bmad-render-venv/bin/python \
+  --project /absolute/path/project --repository-native \
+  --authority AGENTS.md --authority PROJECT_CONSTITUTION.md \
+  --native-instructions /absolute/path/private-project-instructions.md --apply
+```
+
+原生注册不接受 `--policy`。`quality_info.project_profiles` 提供模式、项目内规范路径和私密接入说明；协调者必须在创建任何文件前识别模式。原生项目的 `prepare/run/gate` 只返回 `REPOSITORY_NATIVE_REQUIRED`，CLI退出码2，不读取通用契约、不扫描源树、不执行命令、不生成文件或通用PASS。它是接入路由，**不是完成产品验收**。
+
+云端仍规划并独立审计，本地仍实施和复验；验证按项目规程及实际任务影响选择，结果由原生质量体系判定并在任务上下文记录。原生规则、执行环境或所需证据缺失时保持未完成，不退回通用模式求通过。原通用项目的契约、快照、执行和门禁不变。
+
 正式需求仍遵守项目自己的规则与权威。每项必要REQ关联任务和AC，AC/ARCH关联已登记lane。JSON字段见 schemas/，完整示例见 examples/contract.example.json；不要保留示例批准句，实际填入真实确认原文。`simulated=true`仅用于明确的一次性测试。未确认plan写PENDING，runner不会执行；独立计划审查可以先运行。
 
 semantic contract_id仅包含version、requirements、plan。后补批准引文不使已审的相同语义计划失效；任何需求/计划内容变动都会改变ID。批准引文是审计记录，不是不可伪造签名。

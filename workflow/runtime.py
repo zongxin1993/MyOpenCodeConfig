@@ -1,5 +1,6 @@
 """Registered projects and frozen command policies; MCP methods are read-only."""
 import json
+import copy
 from pathlib import Path
 from .contract import digest, contract_id, validate_contract
 from .snapshot import snapshot
@@ -33,22 +34,58 @@ class Runtime:
         if set(settings) != {'projects'} or type(settings['projects']) is not list:
             raise ValueError('Settings must contain projects only')
         self.projects = {}
+        self.integrations = {}
         for project in settings['projects']:
-            if set(project) != {'root', 'policy'} or check(project['policy'], 'policy'):
+            if not isinstance(project, dict) or set(project) not in ({'root', 'policy'}, {'root', 'integration'}):
                 raise ValueError('Invalid registered project/policy')
             root = Path(project['root']).resolve(strict=True)
             if root == Path.home() or root == Path('/') or not root.is_dir():
                 raise ValueError('Register a specific project, not home or filesystem root')
             if str(root) in self.projects: raise ValueError('Duplicate project')
-            self.projects[str(root)] = project['policy']
+            if 'integration' in project:
+                profile = project['integration']
+                if (not isinstance(profile, dict) or set(profile) != {'mode', 'authorities', 'instructions'}
+                        or profile['mode'] != 'repository-native'
+                        or not isinstance(profile['instructions'], str)
+                        or not 1 <= len(profile['instructions'].strip()) <= 16000
+                        or type(profile['authorities']) is not list
+                        or not 1 <= len(profile['authorities']) <= 32):
+                    raise ValueError('Invalid repository-native profile')
+                seen = set()
+                for name in profile['authorities']:
+                    if not isinstance(name, str) or not name or name in seen:
+                        raise ValueError('Invalid native authority reference')
+                    path = Path(name)
+                    if path.is_absolute() or '..' in path.parts:
+                        raise ValueError('Native authorities must be project-relative')
+                    current = root
+                    for part in path.parts:
+                        current /= part
+                        if current.is_symlink(): raise ValueError('Symlink native authority refused')
+                    if not current.is_file() or root not in current.resolve().parents:
+                        raise ValueError('Missing/outside native authority')
+                    seen.add(name)
+                self.integrations[str(root)] = copy.deepcopy(profile)
+                self.projects[str(root)] = None
+            else:
+                if check(project['policy'], 'policy'): raise ValueError('Invalid registered policy')
+                self.projects[str(root)] = project['policy']
     def root(self, project):
         root = Path(project).resolve(strict=True)
         if str(root) not in self.projects: raise ValueError('Project not registered')
         return root
     def info(self):
         return {'projects': list(self.projects), 'tools_read_only': True,
+                'project_profiles': {root: copy.deepcopy(self.integrations.get(root, {'mode': 'portable'}))
+                                     for root in self.projects},
                 'resources': list(self._resources()),
                 'note': 'Commands run only through the local CLI; resources are fixed public package assets, not user files'}
+    def native_status(self, root):
+        profile = self.integrations.get(str(root))
+        if profile is None: return None
+        return {'status': 'REPOSITORY_NATIVE_REQUIRED', 'project': str(root),
+                'generic_gate_applicable': False, **copy.deepcopy(profile),
+                'reason': 'Use the repository authorities and native validation. No portable contract, snapshot, execution or PASS is produced.'}
     def _resources(self):
         package = Path(__file__).resolve().parents[1]
         resources = {'schema/' + p.name.removesuffix('.schema.json'): p for p in (package / 'schemas').glob('*.schema.json')}
@@ -86,7 +123,10 @@ class Runtime:
         return {'name': name, 'content': text,
                 'source': 'Pinned public package resource; no project/user directory contents'}
     def prepare(self, project, contract, plan_reviews=None):
-        root = self.root(project); c = read_json(project_file(root, contract)); p = self.projects[str(root)]
+        root = self.root(project)
+        native = self.native_status(root)
+        if native is not None: return native
+        c = read_json(project_file(root, contract)); p = self.projects[str(root)]
         issues = validate_contract(c, p, approved=False)
         result = {'contract_valid': not issues, 'issues': issues, 'contract_id': contract_id(c),
                 'policy_id': digest(p), 'snapshot': snapshot(root),
@@ -98,7 +138,10 @@ class Runtime:
             result['plan_gate'] = evaluate_plan(root, c, p, reviews)
         return result
     def gate(self, project, contract, evidence, reviews):
-        root = self.root(project); c = read_json(project_file(root, contract)); p = self.projects[str(root)]
+        root = self.root(project)
+        native = self.native_status(root)
+        if native is not None: return native
+        c = read_json(project_file(root, contract)); p = self.projects[str(root)]
         e = read_json(project_file(root, evidence))
         if type(reviews) is not list or len(reviews) > 4: raise ValueError('Up to four review artifacts')
         rs = [read_json(project_file(root, f)) for f in reviews]
@@ -110,7 +153,10 @@ class Runtime:
                 raise ValueError('Log outside project evidence directory')
         return evaluate_gate(root, c, p, e, rs)
     def run(self, project, contract):
-        root = self.root(project); c = read_json(project_file(root, contract)); p = self.projects[str(root)]
+        root = self.root(project)
+        native = self.native_status(root)
+        if native is not None: return native
+        c = read_json(project_file(root, contract)); p = self.projects[str(root)]
         errors = validate_contract(c, p)
         if errors: raise ValueError('; '.join(errors))
         logs = safe_quality_dir(root, 'logs')

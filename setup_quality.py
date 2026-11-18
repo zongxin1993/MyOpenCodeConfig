@@ -23,13 +23,15 @@ def preflight_skill(path):
     if path.exists() and (not (path / 'SKILL.md').is_file() or MARKER not in (path / 'SKILL.md').read_text()):
         raise ValueError('Refuse foreign skill: ' + path.name)
 
-def merge_registration(settings, project, policy):
+def merge_registration(settings, project, policy, integration=None):
     result = copy.deepcopy(settings)
     if project is not None:
-        if check(policy, 'policy'): raise ValueError('Invalid project policy')
+        if integration is None and check(policy, 'policy'): raise ValueError('Invalid project policy')
+        if integration is not None and policy is not None: raise ValueError('Native profile cannot have portable policy')
         root = str(Path(project).resolve(strict=True))
         result['projects'] = [p for p in result['projects'] if p['root'] != root]
-        result['projects'].append({'root': root, 'policy': copy.deepcopy(policy)})
+        entry = {'root': root, 'integration': copy.deepcopy(integration)} if integration is not None else {'root': root, 'policy': copy.deepcopy(policy)}
+        result['projects'].append(entry)
     Runtime(result)  # validates exact roots and policies before any configuration write
     return result
 
@@ -108,7 +110,11 @@ def install(args):
     config = home / '.config/opencode/opencode.json'; state = config.parent / '.workflow-generated-state.json'
     private = home / '.config/opencode-quality/settings.json'
     settings = read_json(private) if private.exists() else {'projects': []}
-    settings = merge_registration(settings, args.project, read_json(args.policy) if args.policy else None)
+    integration = None
+    if args.repository_native:
+        integration = {'mode': 'repository-native', 'authorities': args.authority,
+                       'instructions': args.native_instructions.read_text()}
+    settings = merge_registration(settings, args.project, read_json(args.policy) if args.policy else None, integration)
     base = read_json(config); raw = config.read_bytes(); models = read_json(args.models)
     templates = read_json(ROOT / 'templates.json')
     previous = read_json(state) if state.exists() else None
@@ -126,7 +132,7 @@ def install(args):
     release, rendered = prepare_runtime(args.source, args.render_python,
                                         home / '.local/share/myopencodeconfig/quality')
     for project in settings['projects']:
-        for lane in project['policy']['lanes']:
+        for lane in project.get('policy', {}).get('lanes', []):
             lane['argv'] = [arg.replace('__QUALITY_RUNTIME__', str(release)) for arg in lane['argv']]
     Runtime(settings)
     server = {'type': 'local', 'command': [sys.executable, '-m', 'workflow.server', '--settings', str(private)],
@@ -181,8 +187,15 @@ def main():
     p.add_argument('--root', type=Path, default=Path.home()); p.add_argument('--models', type=Path, required=True)
     p.add_argument('--source', type=Path); p.add_argument('--render-python', type=Path)
     p.add_argument('--project', type=Path); p.add_argument('--policy', type=Path); p.add_argument('--apply', action='store_true')
+    p.add_argument('--repository-native', action='store_true')
+    p.add_argument('--authority', action='append', default=[])
+    p.add_argument('--native-instructions', type=Path)
     a = p.parse_args()
-    if bool(a.project) != bool(a.policy): p.error('--project and --policy must be supplied together')
+    if a.repository_native:
+        if not a.project or a.policy or not a.authority or not a.native_instructions:
+            p.error('Native registration requires --project, --authority and --native-instructions, without --policy')
+    elif a.authority or a.native_instructions or bool(a.project) != bool(a.policy):
+        p.error('Use --project with --policy, or a complete --repository-native registration')
     if a.apply and (not a.source or not a.render_python): p.error('Apply requires a pinned source checkout and Python3.11+ renderer environment')
     try: print(json.dumps(install(a), ensure_ascii=False, indent=2))
     except (ValueError, OSError, subprocess.SubprocessError) as exc: p.exit(1, 'Quality install rejected: ' + str(exc) + '\n')
