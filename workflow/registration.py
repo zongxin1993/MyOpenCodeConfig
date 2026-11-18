@@ -6,6 +6,7 @@ import os
 from pathlib import Path
 import stat
 import uuid
+import subprocess
 from .files import atomic_json
 
 AUTHORITY_NAMES = ('PROJECT_CONSTITUTION.md', 'AGENTS.md', 'quality-policy.toml')
@@ -85,6 +86,41 @@ def discover(root, registered=()):
     return root, {'mode': 'repository-native', 'authorities': names, 'instructions': INSTRUCTIONS}
 
 
+def linked_registration(requested, settings):
+    """Map a genuine linked worktree to its nearest already registered profile."""
+    def git_paths(directory):
+        try:
+            value = subprocess.check_output(['git', '-C', str(directory), 'rev-parse',
+                '--path-format=absolute', '--git-dir', '--git-common-dir', '--show-toplevel'],
+                text=True, stderr=subprocess.DEVNULL, timeout=10).strip().splitlines()
+            return tuple(Path(p).resolve(strict=True) for p in value) if len(value) == 3 else None
+        except (OSError, subprocess.SubprocessError): return None
+    paths = git_paths(requested)
+    if paths is None: return None
+    git_dir, common, checkout = paths
+    if git_dir == common or common / 'worktrees' not in git_dir.parents: return None
+    matches = []
+    for project in settings['projects']:
+        source = Path(project['root']).resolve(strict=True); other = git_paths(source)
+        if other is None or other[1] != common: continue
+        relative = source.relative_to(other[2]); mapped = checkout / relative
+        if mapped != requested and mapped not in requested.parents: continue
+        entry = copy.deepcopy(project); entry['root'] = str(mapped)
+        # Fixed executable policies must never accidentally run against the original checkout.
+        for lane in entry.get('policy', {}).get('lanes', []):
+            values = [arg.split('=', 1)[-1] if arg.startswith('-') else arg for arg in lane['argv']]
+            if any(arg == str(source) or arg.startswith(str(source) + os.sep) for arg in values):
+                raise ValueError('Policy points at source checkout; adapt before worktree execution')
+        matches.append((len(mapped.parts), entry))
+    if not matches: return None
+    deepest = max(depth for depth, _ in matches)
+    candidates = [entry for depth, entry in matches if depth == deepest]
+    if any({k:v for k,v in entry.items() if k!='root'} !=
+           {k:v for k,v in candidates[0].items() if k!='root'} for entry in candidates):
+        raise ValueError('Conflicting profiles for the same Git worktree; reconcile explicitly')
+    return candidates[0]
+
+
 def onboard(settings_path, project):
     from .runtime import Runtime, read_json
     requested = specific_root(project)
@@ -97,13 +133,18 @@ def onboard(settings_path, project):
         if ancestors:
             root = max(ancestors, key=lambda p: len(p.parts))
         else:
-            root, integration = discover(requested, current.projects)
+            inherited = linked_registration(requested, settings)
+            if inherited:
+                root = Path(inherited['root'])
+            else:
+                root, integration = discover(requested, current.projects)
         if str(root) in current.projects:
             profile = current.info()['project_profiles'][str(root)]
             return {'status': 'ONBOARDING_READY', 'onboarding': 'reused', 'project': str(root),
                     **profile, 'acceptance_pass': False, 'backup_created': False}
         updated = copy.deepcopy(settings)
-        updated['projects'].append({'root': str(root), 'integration': integration})
+        entry = inherited if inherited else {'root': str(root), 'integration': integration}
+        updated['projects'].append(entry)
         Runtime(updated)
         backups = path.parent / 'backups'
         if backups.is_symlink(): raise ValueError('Symlink backup directory refused')
@@ -113,5 +154,6 @@ def onboard(settings_path, project):
             os.fchmod(output.fileno(), 0o600)
             output.write(path.read_bytes())
         atomic_json(path, updated)
+        profile = entry.get('integration', {'mode': 'portable'})
         return {'status': 'ONBOARDING_READY', 'onboarding': 'registered', 'project': str(root),
-                **integration, 'acceptance_pass': False, 'backup_created': True}
+                **profile, 'acceptance_pass': False, 'backup_created': True}

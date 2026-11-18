@@ -18,6 +18,33 @@ from workflow.schema import check
 ROOT = Path(__file__).resolve().parent
 MARKER = 'Managed-By: MyOpenCodeConfig quality'
 
+def plugin_preferences(home, models):
+    """Merge only integration-critical preferences; never credentials or other UI choices."""
+    desired = {}
+    extensions = models.get('extensions', {})
+    if extensions.get('plannotator'):
+        desired[home / '.plannotator/config.json'] = {'agentSwitch': 'disabled'}
+    if extensions.get('quota'):
+        desired[home / '.config/opencode/opencode-quota/settings.jsonc'] = {
+            'version': 6, 'providers': {'checking': {'waitForQuotaReset': False}},
+            'system': {'exportFile': False, 'telemetry': False}}
+    def merge(current, values):
+        for key, value in values.items():
+            if isinstance(value, dict):
+                old = current.get(key, {})
+                if not isinstance(old, dict): raise ValueError('Invalid plugin preference object')
+                current[key] = merge(copy.deepcopy(old), value)
+            else: current[key] = value
+        return current
+    result = {}
+    for path, values in desired.items():
+        if any(p.is_symlink() for p in (path, *path.parents)):
+            raise ValueError('Symlink plugin preference refused')
+        current = read_json(path) if path.exists() else {}
+        if not isinstance(current, dict): raise ValueError('Plugin preferences must be a JSON object')
+        result[path] = merge(current, values)
+    return result
+
 def preflight_skill(path):
     if path.is_symlink(): raise ValueError('Refuse foreign skill symlink: ' + path.name)
     if path.exists() and (not (path / 'SKILL.md').is_file() or MARKER not in (path / 'SKILL.md').read_text()):
@@ -126,6 +153,7 @@ def _install(args):
     templates = read_json(ROOT / 'templates.json')
     previous = read_json(state) if state.exists() else None
     compiled, generated = configure.compile_config(base, models, templates, previous)
+    preferences = plugin_preferences(home, models)
     targets = [home / '.agents/skills' / name for name in ['quality-planning', 'quality-review']]
     for target in targets: preflight_skill(target)
     servers = compiled.setdefault('mcp', {}).setdefault('servers', {})
@@ -146,6 +174,12 @@ def _install(args):
             if isinstance(entry, dict) and entry.get('package') == old_package:
                 entry['package'] = package
         plugin['package'] = package
+    for plugin in generated.get('extension_plugins', []):
+        if plugin['package'] == str(ROOT / 'plugins/worktree-policy'):
+            old_package = plugin['package']; package = str(release / 'plugins/worktree-policy')
+            for entry in compiled.get('plugins', []):
+                if isinstance(entry, dict) and entry.get('package') == old_package: entry['package'] = package
+            plugin['package'] = package
     for project in settings['projects']:
         for lane in project.get('policy', {}).get('lanes', []):
             lane['argv'] = [arg.replace('__QUALITY_RUNTIME__', str(release)) for arg in lane['argv']]
@@ -161,11 +195,12 @@ def _install(args):
         for token, value in substitutions.items(): text = text.replace(token, value)
         skill_texts[target.name] = text
     if (compiled == base and generated == previous and private.exists() and read_json(private) == settings
+            and all(p.exists() and read_json(p) == values for p, values in preferences.items())
             and all((target / 'SKILL.md').is_file() and (target / 'SKILL.md').read_text() == skill_texts[target.name] for target in targets)):
         return {'applied': False, 'changed': False, 'runtime': str(release), 'projects': [p['root'] for p in settings['projects']]}
     stamp = datetime.now(timezone.utc).strftime('%Y%m%dT%H%M%S%fZ')
     backup = config.parent / 'backups' / ('quality-workflow-' + stamp); backup.mkdir(parents=True, mode=0o700)
-    destinations = [config, state, private] + targets
+    destinations = [config, state, private] + targets + list(preferences)
     manifest = []
     for i, target in enumerate(destinations):
         item = {'path': str(target), 'existed': target.exists(), 'backup': str(backup / str(i))}
@@ -180,6 +215,9 @@ def _install(args):
             target.mkdir(parents=True, exist_ok=True)
             configure.atomic_write(target / 'SKILL.md', skill_texts[target.name].encode())
         private.parent.mkdir(parents=True, exist_ok=True)
+        for target, data in preferences.items():
+            target.parent.mkdir(parents=True, exist_ok=True)
+            configure.atomic_write(target, (json.dumps(data, ensure_ascii=False, indent=2) + '\n').encode())
         for target, data in [(private, settings), (state, generated), (config, compiled)]:
             configure.atomic_write(target, (json.dumps(data, ensure_ascii=False, indent=2) + '\n').encode())
     except BaseException:

@@ -15,4 +15,18 @@ class InstallTests(unittest.TestCase):
    p=Path(td);(p/'SKILL.md').write_text('User skill')
    with self.assertRaises(ValueError):preflight_skill(p)
    self.assertEqual((p/'SKILL.md').read_text(),'User skill')
+
+class PreferenceTests(unittest.TestCase):
+ def test_preferences_preserve_unrelated_and_keep_cloud_agent(self):
+  from setup_quality import plugin_preferences
+  with tempfile.TemporaryDirectory() as td:
+   home=Path(td).resolve();p=home/'.plannotator/config.json';p.parent.mkdir();p.write_text('{"identity":"keep","agentSwitch":"build"}')
+   out=plugin_preferences(home,{'extensions':{'plannotator':True,'quota':True}})
+   self.assertEqual(out[p]['identity'],'keep');self.assertEqual(out[p]['agentSwitch'],'disabled')
+   q=home/'.config/opencode/opencode-quota/settings.jsonc';self.assertFalse(out[q]['providers']['checking']['waitForQuotaReset'])
+   self.assertEqual(json.loads(p.read_text())['agentSwitch'],'build')
+ def test_disabled_extensions_do_not_manage_preferences(self):
+  from setup_quality import plugin_preferences
+  with tempfile.TemporaryDirectory() as td:self.assertEqual(plugin_preferences(Path(td),{}),{})
+
 if __name__=='__main__':unittest.main()

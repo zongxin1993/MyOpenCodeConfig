@@ -76,3 +76,19 @@ python3 configure.py --models models.local.json
 在主会话选云模型时，真实local-worker仍由原本地服务模型执行、无新增命名variant，返回正文正确区分云端协调与本地执行。全部五轮及两种子会话正常结束。插件状态active；本机安装先备份，Provider、压缩、本地角色与维护模型、原项目登记对比保持，相同输入再安装返回changed=false。完整原生记录、路径及会话标识留在本机，不随仓库发布。
 
 本次通过服务API验证实际路由和主对话消息，未自动点击Desktop模型选择器做截图认证。已在途请求和未再次委派的自主子会话不被中途切换；下一次新建/续跑委派才跟随。仅针对托管角色，不宣称其他插件、旧版SDK或任意项目覆盖配置均已验证。
+
+## 三插件与 worktree 实施（2026-11-18）
+
+67项Python回归通过，其中两个测试实际调用12项Node测试（7项模型路由、5项真实Git隔离）。新增覆盖固定包、工具权限、托管条目幂等/冲突/移除、关键插件偏好保留、worktree复用/移动、旧worker拒绝、嵌套工程路径、伪造真实.git标记拒绝，以及原生/通用策略继承与绝对原目录参数拒绝。独立代码复核发现的三个问题均有真实失败复现和修复后回归；实现全程在独立worktree，原配置仓库checkout的源码未改。
+
+真实安装的 Context7 0.2.2、Quota 6.3.0、Plannotator 0.28.67 与两个自建策略插件均为active。用户完成Context7官方OAuth后，low云模型实际调用resolve-library-id和query-docs，取得pytest 8.3.5对应文档；不是只验证工具可见。Quota GUI实际显示供应商返回的额度/检查时间，使用窗口在Desktop打开且内容可见；运行时确认其重试改写关闭，未运行会自动登记Provider的quota_status命令。未把本地推理服务估算为供应商权威额度。
+
+在可丢弃Git工程以gpt-6.1-sol#low执行：GrillMe澄清 → 驱动确认设计 → 原生worktree创建/移动及profile继承 → 独立计划审查 → Plannotator真实浏览器中文批注请求修改 → 计划增量复审 → 修订版可视批准 → 固定Strata worker真实TDD → 云端只读审计。批注回执没有触发实施；批准后会话仍为cloud-workflow，按钮不再默认切build。
+
+首次GREEN后驱动仅在测试worktree注入`>`变成`>=`的预设缺陷。云端low直接读到当前缺陷，阻断等边界错误及旧GREEN失效问题；同一Strata worker实际运行失败（3个subTest错误），恢复严格比较，保持测试不变并重新运行2个测试方法/17个验收subTests全部通过、退出0。原云端审查者重新读取修复源码与测试，关闭两项发现。后续平级context-free quick lens为独立新云会话，零发现；原审查者完成pinned BMAD quick的gather、review、triage、route、present，显式关闭此前BMAD_BLOCKED。
+
+测试驱动介入如实保留：模拟一次性需求确认/计划批准、提出中文测试批注、注入故障，以及在模型仅转述摘要时从同一worker原生工具记录转交完整初始/修复前RED。不是实际业务批准，不宣称无人值守。初次计划审查也曾误用portable元数据要求，原生协调流程纠正后继续。插件权限、默认批准代理及审计完成条件在测试中发现并修正。配置现要求完整原始回执和同一worker补齐省略内容；未认证任意模型都能无介入恢复原始记录。
+
+机器交叉核验确认：所有实际云端assistant请求均使用所选low；唯一local-worker全程为固定本地模型、无新增命名variant；所有子会话实际目录均为同一linked worktree；原checkout的HEAD/状态保持，代码恢复为首次GREEN内容；独立原目录派发负向探针被WORKTREE_REQUIRED拦截。Provider、compaction、日常默认模型、本地/维护角色绑定及原有工程策略保留；没有加入Mem/DCP。完整原生消息、回执、OAuth与私密配置留在本机，不随仓库发布。
+
+这是应用工作流隔离，不是OS沙箱；不保证任意脚本不会访问原目录。验收对原目录作实际对比。不宣称Windows、新机器登录、任意插件组合、大工程压力或所有未来版本已经认证。测试worktree为detached HEAD，未提交/合并业务夹具；配置工程另行提交发布，不混淆两种工件。

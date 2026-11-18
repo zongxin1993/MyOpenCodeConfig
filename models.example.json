@@ -1,6 +1,12 @@
 {
   "version": 1,
   "routing": { "cloud_model": "session" },
+  "extensions": {
+    "context7": true,
+    "quota": true,
+    "plannotator": true,
+    "worktree": true
+  },
   "defaults": {
     "cloud": {
       "provider": "openai",

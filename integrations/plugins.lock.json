@@ -1,0 +1,18 @@
+{
+  "context7": {
+    "package": "@upstash/context7-opencode@0.2.2",
+    "integrity": "sha512-emxkGZua3vgwb/Brxc4aluI8MkWsuYGrHyrtYG2BkKRdB0BP7wAP/oFqc1nej9yu3OBEujyqRzCp2xZyubZ+lw=="
+  },
+  "quota": {
+    "package": "@slkiser/opencode-quota@6.3.0",
+    "integrity": "sha512-9/3722wGYPzWkvSDh43Tz1IfTvXFWbI0vtiSmRNQ0P07fh7lxXSaLj+EC4RfCCrOVvh7YM4bp39hKNdZpUpETg=="
+  },
+  "plannotator": {
+    "package": "@plannotator/opencode@0.28.67",
+    "integrity": "sha512-4xl4RVqvjsP/R1CfRrJdkQDePcRp1EG0x4hWa/2Nc9LHKc62ZYV6pBmV2HG+UdqPrCggO/L1rJ+J59wqaYHocg==",
+    "options": {
+      "workflow": "user-managed",
+      "planningAgents": ["cloud-workflow", "cloud-design", "cloud-plan"]
+    }
+  }
+}

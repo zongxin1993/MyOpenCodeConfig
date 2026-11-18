@@ -16,6 +16,55 @@ ROLES = ('cloud-workflow','cloud-design','cloud-plan','cloud-review','local-work
 TITLES = dict(zip(ROLES, ('自动协调','需求澄清与设计','编写计划','独立审计与复审','实施、测试与修复','独立实施入口','只读事实调查','独立计划审查','结构与架构审查','测试有效性审查')))
 MAINTENANCE = ('build','general','explore','compaction','title','summary')
 BINDING_KEYS = {'provider','model','variant','variants'}
+PRIMARY = ('cloud-workflow','cloud-design','cloud-plan')
+
+def plugin_package(entry):
+    return entry if isinstance(entry,str) else entry['package']
+
+def package_id(entry):
+    name=plugin_package(entry)
+    return name.rsplit('@',1)[0] if '@' in name[1:] else name
+
+def extensions_config(out, state, previous, spec, templates):
+    enabled=spec.get('extensions',{})
+    require(isinstance(enabled,dict) and not set(enabled)-{'context7','quota','plannotator','worktree'},'Unknown extension')
+    require(all(type(v) is bool for v in enabled.values()),'Extension values must be boolean')
+    plugins=out.get('plugins',[])
+    for owned in (previous or {}).get('extension_plugins',[]):
+        same=[p for p in plugins if package_id(p)==package_id(owned)]
+        require(not same or same==[owned],'Managed extension modified outside generator')
+        plugins=[p for p in plugins if p!=owned]
+    state['extension_plugins']=[]
+    lock=json.loads((ROOT/'integrations/plugins.lock.json').read_text())
+    for name in ('context7','quota','plannotator','worktree'):
+        if not enabled.get(name):continue
+        entry=({'package':str(ROOT/'plugins/worktree-policy')} if name=='worktree'
+               else {k:copy.deepcopy(v) for k,v in lock[name].items() if k!='integrity'})
+        require(not any(package_id(p)==package_id(entry) for p in plugins),'Unowned extension collision: '+name)
+        plugins.append(entry);state['extension_plugins'].append(copy.deepcopy(entry))
+    if plugins or 'plugins' in out:out['plugins']=plugins
+    templates=copy.deepcopy(templates)
+    for role,agent in templates['agents'].items():
+        actions=[]
+        if enabled.get('context7'):
+            actions+=['context7_resolve-library-id','context7_query-docs']
+            agent['system']+='\nDOCUMENTATION: Read the actual dependency/lockfile version first. Use Context7 when library APIs or configuration are uncertain. Query public library identifiers and questions, not private source or secrets. Cite retrieved version/source; repository contracts remain authoritative.\n'
+        if enabled.get('plannotator') and role in PRIMARY:
+            actions+=['submit_plan']
+            agent['system']+='\nPLAN REVIEW UI: After independent plan review, use submit_plan to show the full current plan for user approval or annotations. Plannotator is user-managed: retain GrillMe/Superpowers and project rules. Rejection/annotations require revision and fresh approval; never treat them as approval. On approval remain cloud-workflow (or current cloud planning role), then delegate fixed local-worker; do not switch to build/local-build or implement in the cloud. Do not invent or cache user approval. Native projects keep task materials in the authorised system.\n'
+        if enabled.get('plannotator') and role.startswith('cloud-'):
+            agent.setdefault('permissions', []).append({'action':'external_directory',
+                'resource':str(Path.home()/'.plannotator/plans')+'/*','effect':'allow'})
+            agent['system']+='\nAPPROVED PLAN EVIDENCE: Cloud audit handoffs must include the full approved plan/current requirements, precise current diff including untracked files and raw execution receipts. Approved Plannotator Markdown snapshots can be read only from the narrowly authorised plans directory; do not read unrelated plans or settings. A missing plan or stale evidence blocks review, never bypass it.\n'
+        if enabled.get('worktree'):
+            agent['system']+='\nWORKTREE ISOLATION: For each new implementation requirement, call workflow_worktree from a primary entry before creating task/code files, implementing, testing or delegating local-worker. It creates an isolated linked Git worktree and moves this session, or reuses existing isolation. Stop this turn after a move; on the next turn use the returned worktree as the actual project, call quality_onboard there (inheriting the source policy), read its rules, and keep all planning artifacts, implementation, tests, repairs and audit in that worktree. Show worktree path/branch and original source path. Never modify source checkout code, stash/reset/clean it, or auto-merge. Non-Git projects block implementation until a separately authorised Git bootstrap. Planning-only read discussion can stay read-only. Reuse the same task worktree/worker for repairs; do not resume a worker still located in the source checkout. Final acceptance names worktree/commit and confirms source checkout unchanged; original repository native gates still apply.\n'
+            if role in PRIMARY or role=='local-build':actions+=['workflow_worktree']
+            agent['system']+='\nEXECUTION RECEIPTS: Local-worker must return original command, cwd, full raw RED/GREEN output, actual exit code, version and file hashes; do not label excerpts or ellipses as complete logs. If a summary omits required output, the coordinator first asks the SAME worker to relay the original tool result verbatim. An omitted summary is not proof the native execution record was lost. Never reconstruct historical output or rerun to pretend an old attempt was captured. Retain an explicit blocker only when required original evidence is actually unavailable.\n'
+        permissions=agent.setdefault('permissions',[])
+        for action in actions:
+            rule={'action':action,'resource':'*','effect':'allow'}
+            if rule not in permissions:permissions.append(rule)
+    return templates
 
 
 def require(condition, message):
@@ -86,7 +135,7 @@ Before subagent use 待派发. Say 已派发 only after a real successful tool r
 
 
 def compile_config(base, spec, templates, previous=None):
-    require(isinstance(spec,dict) and not set(spec)-{'version','defaults','roles','routing'},'Unknown specification fields')
+    require(isinstance(spec,dict) and not set(spec)-{'version','defaults','roles','routing','extensions'},'Unknown specification fields')
     require(spec.get('version')==1,'Unsupported version')
     routing=spec.get('routing',{})
     require(isinstance(routing,dict) and not set(routing)-{'cloud_model'},'Unknown routing fields')
@@ -119,6 +168,8 @@ def compile_config(base, spec, templates, previous=None):
         require(not found or found==[item['value']],'Managed variant was modified outside generator: '+item['value']['id'])
         if found:model['variants']=[v for v in variants if v.get('id')!=item['value']['id']]
     state={'version':1,'variants':[],'roles':{role:reference(b) for role,b in bindings.items()},'permissions':{}}
+    original_templates=templates
+    templates=extensions_config(out,state,previous,spec,templates)
     owned=(previous or {}).get('routing_plugin')
     if owned:
         plugins=out.get('plugins',[])
@@ -153,6 +204,7 @@ def compile_config(base, spec, templates, previous=None):
         managed = (permissions == templates['agents'][role].get('permissions', [])
                    or legacy is not None and permissions == legacy
                    or permissions in templates.get('permission_revisions', {}).get(role, [])
+                   or permissions == original_templates['agents'][role].get('permissions',[])
                    or role in (previous or {}).get('permissions', {}) and permissions == previous['permissions'][role])
         if managed:
             permissions = copy.deepcopy(templates['agents'][role].get('permissions', []))
