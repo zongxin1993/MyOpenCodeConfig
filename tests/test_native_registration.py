@@ -39,7 +39,7 @@ class NativeRegistrationTests(unittest.TestCase):
             good = {'root': td, 'integration': native_profile()}
             cases = []
             for key, value in [('mode', 'unknown'), ('instructions', ''),
-                               ('authorities', []), ('authorities', ['../AGENTS.md']),
+                               ('authorities', None), ('authorities', ['../AGENTS.md']),
                                ('authorities', ['/etc/passwd']), ('authorities', ['missing.md']),
                                ('authorities', [1]), ('authorities', ['AGENTS.md', 'AGENTS.md'])]:
                 entry = copy.deepcopy(good); entry['integration'][key] = value; cases.append(entry)

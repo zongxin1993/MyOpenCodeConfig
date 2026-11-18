@@ -106,6 +106,13 @@ def prepare_runtime(source, render_python, destination):
         raise
 
 def install(args):
+    if args.apply:
+        from workflow.registration import registry_lock
+        with registry_lock(args.root.expanduser().resolve() / '.config/opencode-quality/settings.json'):
+            return _install(args)
+    return _install(args)
+
+def _install(args):
     home = args.root.expanduser().resolve()
     config = home / '.config/opencode/opencode.json'; state = config.parent / '.workflow-generated-state.json'
     private = home / '.config/opencode-quality/settings.json'

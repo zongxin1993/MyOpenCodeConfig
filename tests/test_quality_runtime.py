@@ -16,7 +16,7 @@ class RuntimeTests(unittest.TestCase):
    with self.assertRaises(ValueError):runtime.prepare('/etc','passwd')
    with self.assertRaises(ValueError):runtime.prepare(str(root),'../../etc/passwd')
    with self.assertRaises(ValueError):runtime.prepare(str(root),'x.py')
- def test_stdio_tools_are_readonly_and_work_without_credentials(self):
+ def test_stdio_exposes_inspection_and_narrow_registration_without_command_tools(self):
   import workflow.server as server
-  self.assertEqual({t['name'] for t in server.TOOLS},{'quality_info','quality_prepare','quality_gate','quality_resource'})
+  self.assertEqual({t['name'] for t in server.TOOLS},{'quality_info','quality_prepare','quality_gate','quality_resource','quality_onboard'})
 if __name__=='__main__':unittest.main()

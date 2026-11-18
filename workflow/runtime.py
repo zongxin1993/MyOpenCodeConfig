@@ -1,4 +1,4 @@
-"""Registered projects and frozen command policies; MCP methods are read-only."""
+"""Registered projects: inspection, frozen policies and narrow registry onboarding."""
 import json
 import copy
 from pathlib import Path
@@ -30,7 +30,8 @@ def project_file(root, relative):
     return target
 
 class Runtime:
-    def __init__(self, settings):
+    def __init__(self, settings, settings_path=None):
+        self.settings_path = Path(settings_path) if settings_path is not None else None
         if set(settings) != {'projects'} or type(settings['projects']) is not list:
             raise ValueError('Settings must contain projects only')
         self.projects = {}
@@ -49,7 +50,7 @@ class Runtime:
                         or not isinstance(profile['instructions'], str)
                         or not 1 <= len(profile['instructions'].strip()) <= 16000
                         or type(profile['authorities']) is not list
-                        or not 1 <= len(profile['authorities']) <= 32):
+                        or not 0 <= len(profile['authorities']) <= 32):
                     raise ValueError('Invalid repository-native profile')
                 seen = set()
                 for name in profile['authorities']:
@@ -71,15 +72,28 @@ class Runtime:
                 if check(project['policy'], 'policy'): raise ValueError('Invalid registered policy')
                 self.projects[str(root)] = project['policy']
     def root(self, project):
+        self.refresh()
         root = Path(project).resolve(strict=True)
         if str(root) not in self.projects: raise ValueError('Project not registered')
         return root
     def info(self):
-        return {'projects': list(self.projects), 'tools_read_only': True,
+        self.refresh()
+        return {'projects': list(self.projects), 'tools_read_only': False,
+                'registration_only_writes': True,
                 'project_profiles': {root: copy.deepcopy(self.integrations.get(root, {'mode': 'portable'}))
                                      for root in self.projects},
                 'resources': list(self._resources()),
                 'note': 'Commands run only through the local CLI; resources are fixed public package assets, not user files'}
+    def refresh(self):
+        if self.settings_path is not None:
+            current = Runtime(read_json(self.settings_path))
+            self.projects, self.integrations = current.projects, current.integrations
+    def onboard(self, project):
+        if self.settings_path is None: raise ValueError('Persistent registry required for onboarding')
+        from .registration import onboard
+        result = onboard(self.settings_path, project)
+        self.refresh()
+        return result
     def native_status(self, root):
         profile = self.integrations.get(str(root))
         if profile is None: return None

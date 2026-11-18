@@ -9,7 +9,7 @@ def main():
     p.add_argument('--evidence', default='.quality/evidence.json'); p.add_argument('--review', action='append', default=[])
     a = p.parse_args()
     try:
-        r = Runtime(read_json(a.settings))
+        r = Runtime(read_json(a.settings), settings_path=a.settings)
         if a.action == 'info': value = r.info()
         elif a.action == 'prepare': value = r.prepare(a.project, a.contract)
         elif a.action == 'run': value = r.run(a.project, a.contract)

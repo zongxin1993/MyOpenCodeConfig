@@ -1,4 +1,4 @@
-"""Minimal MCP stdio: no network, model calls, write tools, or command tools."""
+"""MCP stdio: inspection plus narrow local registration; no command/project-write tools."""
 import argparse
 import json
 import sys
@@ -13,6 +13,11 @@ TOOLS = [
  {'name': 'quality_prepare', 'description': 'Read and validate a registered project contract; return exact snapshot and required review kinds. Does not execute commands.', 'inputSchema': schema({'project': S, 'contract': S})},
  {'name': 'quality_gate', 'description': 'Recompute final quality verdict against current bytes, original evidence, and independent review JSON files. Missing/stale/failed checks cannot pass. Read only.', 'inputSchema': schema({'project': S, 'contract': S, 'evidence': S, 'reviews': {'type': 'array', 'items': S}})}]
 TOOLS[2]['inputSchema']['properties']['plan_reviews'] = {'type': 'array', 'items': S}
+for tool in TOOLS: tool['annotations'] = {'readOnlyHint': True}
+TOOLS.append({'name': 'quality_onboard',
+              'description': 'Resolve the current absolute project directory and automatically register missing projects in the local registry. Reuses existing policy unchanged. New projects use repository-native rules, no invented commands. Only writes the fixed private registry/backup; never project files or execution evidence. Registration is not acceptance.',
+              'inputSchema': schema({'project': S}),
+              'annotations': {'readOnlyHint': False, 'destructiveHint': False, 'idempotentHint': True}})
 
 def serve(runtime):
     for line in sys.stdin:
@@ -29,7 +34,7 @@ def serve(runtime):
                 spec = next(t for t in TOOLS if t['name'] == name)
                 from .schema import validate
                 if validate(args, spec['inputSchema']): raise ValueError('Invalid tool arguments')
-                fn = {'quality_info': runtime.info, 'quality_resource': runtime.resource, 'quality_prepare': runtime.prepare, 'quality_gate': runtime.gate}[name]
+                fn = {'quality_info': runtime.info, 'quality_resource': runtime.resource, 'quality_prepare': runtime.prepare, 'quality_gate': runtime.gate, 'quality_onboard': runtime.onboard}[name]
                 try:
                     value = fn(**args)
                     body = value['content'] if name == 'quality_resource' else json.dumps(value, ensure_ascii=False)
@@ -45,5 +50,5 @@ def serve(runtime):
 
 def main():
     parser = argparse.ArgumentParser(); parser.add_argument('--settings', required=True)
-    args = parser.parse_args(); serve(Runtime(read_json(args.settings)))
+    args = parser.parse_args(); serve(Runtime(read_json(args.settings), settings_path=args.settings))
 if __name__ == '__main__': main()
