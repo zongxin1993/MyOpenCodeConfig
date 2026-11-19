@@ -41,6 +41,9 @@
     },
     "browser": {
       "mode": "off"
+    },
+    "search": {
+      "enabled": true
     }
   }
 }

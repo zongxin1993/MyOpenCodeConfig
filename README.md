@@ -8,6 +8,8 @@
 
 新增可选集成：Context7 查版本文档、Quota 显示额度、Plannotator 可视化批注和批准。使用示例映射会开启三项及 worktree 策略；需要按下文完成 **setup_quality.py 完整安装**，才能一起配置插件偏好和权限。记忆及 DCP 不包含在本组合内。详见[插件与隔离工作区](docs/PLUGIN_INTEGRATION.md)。
 
+本地执行可选启用结构化 `execution_search`，先找文件再搜索文本，语法问题用 ast-grep；`execution_status` 给出实际技能和工具调用及 RTK 显示缩减，便于检查模型是否按配置执行。云端保留原生读取、搜索、技能和 Context7。配置、边界与实测状态见[执行效率](docs/EXECUTION_EFFICIENCY.md)和[本次验证记录](docs/validation/2026-11-19-structured-search.md)。
+
 本仓库保存脱敏配置模板、生成器和模型映射示例，并提供一个无额外依赖的 V2 云端会话路由插件，不修改 Desktop 源码。GrillMe 与 Superpowers 作为技能依赖安装；质量扩展提供独立计划审查、固定版 BMAD 只读审计与证据门禁。
 
 已有正式质量体系、要求任务材料留在上下文的工程，采用[仓库原生验证模式](docs/QUALITY_WORKFLOW.md#已有原生验收体系的工程)。云端/本地分工保持，验收沿用项目门禁；不在仓库另建协议或伪造通用PASS。下面的流程图描述显式配置通用机器门禁的项目；新工程自动接入默认采用原生模式。

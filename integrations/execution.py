@@ -1,7 +1,7 @@
 """Pure, portable execution capability selection; no downloads or credential handling."""
 import copy
 from pathlib import Path
-DEFAULTS={'rtk':{'enabled':False,'profile':'safe-output'},'ast_grep':{'enabled':False},
+DEFAULTS={'search':{'enabled':False},'rtk':{'enabled':False,'profile':'safe-output'},'ast_grep':{'enabled':False},
           'worker_skill':False,'rust_skills':[],'serena':{'mode':'off'},'browser':{'mode':'off'}}
 def parse_execution(raw):
     if raw is None: return copy.deepcopy(DEFAULTS)
@@ -45,6 +45,9 @@ def configure_execution(out,state,previous,spec,templates,root):
                 agent['system']=agent['system'].replace('Load executing-plans, test-driven-development and verification-before-completion.', 'Load local-execution, test-driven-development and verification-before-completion.')
                 agent['system']=agent['system'].replace('Load executing-plans for implementation, plus its test-driven-development and verification dependencies.', 'Load local-execution for implementation, plus test-driven-development and verification-before-completion. Do not reload the heavy executing-plans setup or create a second ledger.')
         if role in ('local-worker','local-build','local-inspect'):
+            if options['search']['enabled']:
+                agent.setdefault('permissions',[]).extend({'action':name,'resource':'*','effect':'allow'} for name in ('execution_search','execution_status'))
+                agent['system']+='\nSEARCH ROUTING: First load local-execution via skill. For file discovery and plain-text code lookup prefer execution_search (mode files/text, narrow paths). Use execution_ast_search for Rust syntax patterns when available. Do not build compound cd/find/grep/head pipelines for source lookup. Shell remains for actual builds/tests and justified tool-unavailable fallbacks. At handoff call execution_status and report actual skills/tools and RTK results; never claim usage from availability.\n'
             if options['ast_grep']['enabled']:agent.setdefault('permissions',[]).append({'action':'execution_ast_search','resource':'*','effect':'allow'})
             if options['worker_skill'] and role!='local-inspect':agent['system']+='\nEXECUTION EFFICIENCY: Use the short approved implementation brief. Keep the approved handoff, use actual compiler/test diagnostics, run the required native checks, and return awaiting_review with original logs. Do not re-plan, re-register, spawn agents or call unavailable context tools.\n'
             if options['ast_grep']['enabled']:agent['system']+='\nSTRUCTURAL SEARCH: Use execution_ast_search only for syntax patterns inside this task worktree; ordinary strings use rg/read. Zero structural matches do not prove absence. No rewrite or cross-worktree search.\n'

@@ -70,3 +70,97 @@ test('RTK accepts only the setup-selected absolute rg executable',()=>{
  assert.equal(safeFilter('/verified/rg -H -n marker file','/verified/rg'),'grep');
  assert.equal(safeFilter('/other/rg -H marker file','/verified/rg'),null);
 });
+
+
+test('structured search discovers files, searches literal text and honours read denial',async()=>{
+ const {search}=await import('../plugins/execution-tools/search.js');const f=await fixture();try{
+  const rg=process.env.EXECUTION_RG_BINARY||'rg';const requests=[];
+  const ctx={location:{directory:f.wt},session:{get:async()=>({agent:'local-worker',location:{directory:f.wt}})},permission:{assert:async r=>requests.push(r)}};
+  const call={sessionID:'search-test',agent:'local-worker',id:'c',messageID:'m'};
+  await writeFile(path.join(f.wt,'.env'),'sample secret');
+  const files=await search(ctx,call,{mode:'files',paths:['.']},rg);
+  assert.ok(files.files.includes('code.rs'));assert.ok(!files.files.includes('.env'));
+  const result=await search(ctx,call,{mode:'text',query:'sample()',paths:['.']},rg);
+  assert.equal(result.matches.length,1);assert.equal(result.matches[0].file,'code.rs');assert.equal(result.matches[0].line,1);
+  assert.ok(requests.length>=3);assert.equal(result.incomplete,false);
+  await assert.rejects(search(ctx,{...call,agent:'cloud-workflow'},{mode:'files'},rg),/role/);
+  await assert.rejects(search(ctx,call,{mode:'text',query:'x',paths:[f.main]},rg),/worktree/);
+  ctx.permission.assert=async()=>{throw Error('read denied')};await assert.rejects(search(ctx,call,{mode:'text',query:'sample'},rg),/read denied/);
+ }finally{await rm(f.base,{recursive:true,force:true});}
+});
+test('structured search reports candidate limits and never interprets query as arguments',async()=>{
+ const {search}=await import('../plugins/execution-tools/search.js');const f=await fixture();try{
+ const ctx={location:{directory:f.wt},session:{get:async()=>({agent:'local-worker',location:{directory:f.wt}})},permission:{assert:async()=>{}}};const call={sessionID:'s',agent:'local-worker',id:'c'};const rg=process.env.EXECUTION_RG_BINARY||'rg';
+ for(let i=0;i<70;i++)await writeFile(path.join(f.wt,`f${i}.rs`),'token\n');
+ const limited=await search(ctx,call,{mode:'text',query:'token'},rg);assert.equal(limited.incomplete,true);assert.equal(limited.scannedFiles,64);
+ const flags=await search(ctx,call,{mode:'text',query:'--files',paths:['code.rs']},rg);assert.equal(flags.matches.length,0);
+ await symlink(path.join(f.main,'code.rs'),path.join(f.wt,'outside.rs'));await assert.rejects(search(ctx,call,{mode:'text',query:'sample',paths:['outside.rs']},rg),/worktree/);
+ }finally{await rm(f.base,{recursive:true,force:true});}
+});
+test('session usage records successful skills, tool choice and RTK separately without source',async()=>{
+ const {recordUsage,readUsage}=await import('../plugins/execution-tools/usage.js');const values=new Map();const ctx={storage:{get:async k=>values.get(k),set:async(k,v)=>values.set(k,structuredClone(v))}};
+ await Promise.all([recordUsage(ctx,'s',{tool:'execution_search',bytesBefore:1000,bytesAfter:200,filtered:true}),recordUsage(ctx,'s',{tool:'skill',skill:'local-execution'})]);
+ const s=await readUsage(ctx,'s');assert.equal(s.tools.execution_search,1);assert.equal(s.skills['local-execution'],1);assert.equal(s.rtk.filtered,1);assert.equal(s.rtk.bytesBefore,1000);assert.equal((await readUsage(ctx,'other')).rtk.filtered,0);
+ assert.ok(!JSON.stringify(s).includes('query'));
+});
+
+test('structured search preserves source bytes and reports match truncation and oversized exclusions',async()=>{
+ const {search}=await import('../plugins/execution-tools/search.js');const f=await fixture();try{
+ const ctx={location:{directory:f.wt},session:{get:async()=>({agent:'local-worker',location:{directory:f.wt}})},permission:{assert:async()=>{}}};const call={sessionID:'s',agent:'local-worker',id:'c'};const rg=process.env.EXECUTION_RG_BINARY||'rg';
+ const raw='hello\n'.repeat(205);await writeFile(path.join(f.wt,'many.rs'),raw);
+ let r=await search(ctx,call,{mode:'text',query:'hello',paths:['many.rs']},rg);assert.equal(r.matches.length,200);assert.equal(r.totalMatches,205);assert.equal(r.incomplete,true);assert.equal(await readFile(path.join(f.wt,'many.rs'),'utf8'),raw);
+ await writeFile(path.join(f.wt,'large.rs'),'hello'.repeat(220000));r=await search(ctx,call,{mode:'text',query:'hello',paths:['large.rs']},rg);assert.equal(r.incomplete,true);assert.equal(r.scannedFiles,0);assert.equal(r.skippedFiles,1);
+ }finally{await rm(f.base,{recursive:true,force:true});}
+});
+test('structured search rejects swapped directories, protected paths and cancelled requests',async()=>{
+ const {search}=await import('../plugins/execution-tools/search.js');const f=await fixture();try{
+ await mkdir(path.join(f.wt,'src'));await writeFile(path.join(f.wt,'src/code.rs'),'safe');
+ const call={sessionID:'s',agent:'local-worker',id:'c'};const rg=process.env.EXECUTION_RG_BINARY||'rg';
+ const ctx={location:{directory:f.wt},session:{get:async()=>({agent:'local-worker',location:{directory:f.wt}})},permission:{assert:async()=>{}}};
+ await assert.rejects(search(ctx,call,{mode:'files',paths:['.git']},rg),/Protected/);
+ const controller=new AbortController();controller.abort();await assert.rejects(search(ctx,{...call,signal:controller.signal},{mode:'files'},rg),/cancelled/);
+ ctx.permission.assert=async()=>{await rm(path.join(f.wt,'src'),{recursive:true});await symlink(f.main,path.join(f.wt,'src'));};
+ await assert.rejects(search(ctx,call,{mode:'files',paths:['src']},rg),/changed/);
+ }finally{await rm(f.base,{recursive:true,force:true});}
+});
+
+test('structured search bounds actual reads when files grow during permission approval',async()=>{
+ const {search}=await import('../plugins/execution-tools/search.js');const f=await fixture();try{
+ for(let i=0;i<9;i++)await writeFile(path.join(f.wt,`grow${i}.rs`),'small');
+ let calls=0;const ctx={location:{directory:f.wt},session:{get:async()=>({agent:'local-worker',location:{directory:f.wt}})},permission:{assert:async()=>{if(++calls===2)for(let i=0;i<9;i++)await writeFile(path.join(f.wt,`grow${i}.rs`),'x'.repeat(1024*1024));}}};
+ await assert.rejects(search(ctx,{sessionID:'s',agent:'local-worker',id:'c'},{mode:'text',query:'x'},process.env.EXECUTION_RG_BINARY||'rg'),/budget/);
+ }finally{await rm(f.base,{recursive:true,force:true});}
+});
+test('native hooks observe actual skill IDs and shell RTK results',async t=>{
+ const bin=process.env.EXECUTION_RTK_BINARY;if(!bin)return t.skip('Set EXECUTION_RTK_BINARY');
+ const plugin=(await import('../plugins/execution-tools/index.js')).default;const {readUsage}=await import('../plugins/execution-tools/usage.js');const store=new Map(),hooks=[];
+ const ctx={options:{rtk:{enabled:true},tools:{rtk:bin}},tool:{hook:async(n,h)=>hooks.push(h)},session:{hook:async()=>{}},storage:{get:async k=>store.get(k),set:async(k,v)=>store.set(k,v)}};
+ await plugin.setup(ctx);const raw=Array.from({length:100},(_,i)=>`src/code.rs:${i+1}: fn repeated_function() { /* repeated evidence */ }`).join('\n');
+ const event={sessionID:'s',agent:'local-worker',tool:'shell',status:'completed',input:{command:'rg -n repeated src'},result:{content:[{type:'text',text:raw}],metadata:{exitCode:0}}};
+ for(const h of hooks)await h(event);
+ for(const h of hooks)await h({sessionID:'s',agent:'local-worker',tool:'skill',status:'completed',input:{id:'local-execution'},result:{metadata:{name:'local-execution'}}});
+ const status=await readUsage(ctx,'s');assert.equal(status.skills['local-execution'],1);assert.equal(status.rtk.filtered,1);assert.ok(status.rtk.bytesAfter<status.rtk.bytesBefore);await rm(event.result.metadata.rtkOriginal);
+});
+
+test('file mode query is a filename glob, including leading dashes without flag execution',async()=>{
+ const {search}=await import('../plugins/execution-tools/search.js');const f=await fixture();try{
+ await writeFile(path.join(f.wt,'notes.txt'),'note');await writeFile(path.join(f.wt,'.gitignore'),'ignored.rs\n');await writeFile(path.join(f.wt,'ignored.rs'),'private ignored source');const ctx={location:{directory:f.wt},session:{get:async()=>({agent:'local-worker',location:{directory:f.wt}})},permission:{assert:async()=>{}}};const call={sessionID:'s',agent:'local-worker',id:'c'};const bin=process.env.EXECUTION_RG_BINARY||'rg';
+ const r=await search(ctx,call,{mode:'files',query:'*.rs'},bin);assert.deepEqual(r.files,['code.rs']);
+ const empty=await search(ctx,call,{mode:'files',query:'--files'},bin);assert.deepEqual(empty.files,[]);
+ }finally{await rm(f.base,{recursive:true,force:true});}
+});
+
+
+test('cloud context keeps native review tools and hides local execution tools without logging cloud usage',async()=>{
+ const plugin=(await import('../plugins/execution-tools/index.js')).default;
+ const {readUsage}=await import('../plugins/execution-tools/usage.js');const contexts=[],after=[],store=new Map();
+ const ctx={options:{search:{enabled:true},tools:{rg:'/verified/rg'}},tool:{transform:async()=>{},hook:async(_n,h)=>after.push(h)},session:{hook:async(_n,h)=>contexts.push(h)},storage:{get:async k=>store.get(k),set:async(k,v)=>store.set(k,v)}};
+ await plugin.setup(ctx);
+ for(const agent of ['cloud-workflow','cloud-plan','cloud-review']){
+  const event={agent,tools:{read:{},grep:{},skill:{},context7_query_docs:{},execution_search:{},execution_ast_search:{},execution_status:{}},system:[]};
+  for(const h of contexts)await h(event);
+  assert.deepEqual(Object.keys(event.tools),['read','grep','skill','context7_query_docs']);assert.equal(event.system.length,0);
+  for(const h of after)await h({sessionID:agent,agent,tool:'skill',status:'completed',input:{id:'quality-review'}});
+  assert.deepEqual((await readUsage(ctx,agent)).tools,{});
+ }
+});

@@ -28,7 +28,7 @@ export async function authorizeFiles(ctx,call,files){
 }
 
 
-export async function readAuthorizedSources(ctx,call,files){
+export async function readAuthorizedSources(ctx,call,files,{maxTotalBytes=64*1024*1024}={}){
  if(!Array.isArray(files)||!files.length||files.length>64)throw Error('Select 1..64 explicit source files');
  if(!roles.has(call.agent))throw Error('Execution tool role not allowed');
  const session=await ctx.session.get({sessionID:call.sessionID});
@@ -50,12 +50,17 @@ export async function readAuthorizedSources(ctx,call,files){
   const targets=await authorizeFiles(ctx,call,files),out=[];
   const currentSession=await ctx.session.get({sessionID:call.sessionID});
   if(currentSession.agent!==call.agent||await realpath(currentSession.location.directory)!==directory)throw Error('Session changed during permission wait');
+  let used=0;
   for(let i=0;i<targets.length;i++){
    const item=handles[i],current=await realpath(path.resolve(ctx.location.directory,files[i]));
    if(current!==item.target)throw Error('Source changed during permission wait');
    const actual=await stat(current),opened=await item.handle.stat();
    if(actual.dev!==opened.dev||actual.ino!==opened.ino)throw Error('Source identity changed during permission wait');
-   const text=await item.handle.readFile('utf8');if(text.includes('\0')||Buffer.byteLength(text)>1024*1024)throw Error('Invalid text source');
+   const remaining=maxTotalBytes-used;
+   const cap=Math.min(1024*1024,remaining);const buffer=Buffer.alloc(cap+1);let count=0;
+   while(count<buffer.length){const read=await item.handle.read(buffer,count,buffer.length-count,count);if(!read.bytesRead)break;count+=read.bytesRead;}
+   if(count>cap)throw Error('Source byte budget exceeded');used+=count;
+   const text=buffer.subarray(0,count).toString('utf8');if(text.includes('\0'))throw Error('Invalid text source');
    out.push({file:item.target,text});
   }
   return out;

@@ -22,6 +22,27 @@ class ExecutionConfigTests(unittest.TestCase):
   s.pop('execution');disabled,_=configure.compile_config(out,s,t,state)
   self.assertFalse(any('execution-tools' in p['package'] for p in disabled.get('plugins',[])))
 
+ def test_structured_search_is_explicit_and_only_local_roles_receive_permission(self):
+  b,s=base(),spec();s['execution']={'search':{'enabled':True},'worker_skill':True}
+  out,_=configure.compile_config(b,s,json.loads(Path('templates.json').read_text()))
+  for role in ('local-worker','local-build','local-inspect'):
+   self.assertIn('execution_search',out['agents'][role]['system'])
+   self.assertTrue(any(p.get('action')=='execution_search' for p in out['agents'][role]['permissions']))
+  for role in ('cloud-workflow','cloud-plan','cloud-review'):
+   self.assertFalse(any(p.get('action')=='execution_search' for p in out['agents'][role].get('permissions',[])))
+  self.assertEqual(out['providers'],configure.compile_config(b,spec(),json.loads(Path('templates.json').read_text()))[0]['providers'])
+
+ def test_search_only_setup_installs_entry_skill_and_requires_rg(self):
+  from integrations.execution import parse_execution
+  from workflow.execution_setup import plan_execution
+  from unittest.mock import patch
+  options=parse_execution({'search':{'enabled':True}})
+  with patch('shutil.which',return_value='/bin/echo'):
+   plan=plan_execution(Path('/tmp/fixture'),options,{})
+  self.assertIn('local-execution',plan['skills']);self.assertIn('rg',plan['tools'])
+  with patch('shutil.which',return_value=None),self.assertRaisesRegex(ValueError,'rg'):
+   plan_execution(Path('/tmp/fixture'),options,{})
+
  def test_node_execution_suite(self):
   import subprocess
   result=subprocess.run(['node','--test','tests/test_execution_tools.mjs'],capture_output=True,text=True)

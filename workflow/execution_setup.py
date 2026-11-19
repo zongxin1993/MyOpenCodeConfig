@@ -97,15 +97,16 @@ def plan_execution(home,options,lock,projects=()):
         v=subprocess.check_output([str(binary),'--version'],text=True,timeout=5).strip()
         if v.split()[-1]!=lock[name]['version']:raise ValueError('Pinned '+name+' version mismatch')
         result['tools'][name]=str(binary)
-    if options['rtk']['enabled'] and shutil.which('rg'):
+    if (options['rtk']['enabled'] or options.get('search',{}).get('enabled')) and shutil.which('rg'):
         result['tools']['rg']=str(Path(shutil.which('rg')).resolve(strict=True))
+    if options.get('search',{}).get('enabled') and 'rg' not in result['tools']:raise ValueError('Install rg before enabling structured search')
     if options['rtk']['enabled']:
         files=discover_rtk(home,projects)
         if len(files)>1:raise ValueError('Multiple RTK discovery entries: reconcile before enabling')
         for p in files:
             if hashlib.sha256(content(p)).hexdigest()!=lock['rtk']['adapter_sha256']:raise ValueError('Unknown RTK discovery hook; refusing takeover: '+str(p))
             result['remove'].append(str(p))
-    if options['worker_skill']:result['skills'].append('local-execution')
+    if options['worker_skill'] or options.get('search',{}).get('enabled'):result['skills'].append('local-execution')
     if options['rust_skills']:result['skills'].append('rust-diagnostics')
     if options['ast_grep']['enabled']:result['skills'].append('ast-grep')
     # A disabled optional process is not installed, started or exposed. Its independent

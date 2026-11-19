@@ -14,3 +14,10 @@ Managed-By: MyOpenCodeConfig execution
 6. Keep original logs, command/cwd/exit/version and required source hashes; summaries are navigation. Report failures and blocked lanes honestly. Follow the project's repeated-failure stop condition; do not invent a new retry budget.
 7. Context tools are optional: never call compress/acp_status when absent. If compression reports no remaining range, continue implementation. Do not guess message IDs, churn summaries or treat a summary as source truth.
 8. Return awaiting_review with changed files, actual commands and results, original logs and unresolved issues. On review findings use this same worker, verify the reported defect, repair within scope, rerun affected checks and return for independent re-review. Commit/publish only when separately authorised by the coordinator after required review.
+
+## Search routing and observable completion
+
+- Start with `execution_search` mode `files` for paths, then mode `text` with a literal query and narrow `paths`. A limited result is incomplete; narrow and continue before claiming absence.
+- Use `execution_ast_search` for syntax patterns in explicit Rust or other supported source files. Do not use a text search as proof of syntax or call a Rust diagnostic skill just because a file is Rust.
+- Avoid compound `cd && find/grep | head` for source discovery. Use shell for builds, tests and concrete diagnostics; if the search tool is unavailable, state the fallback reason and use the verified rg path.
+- At handoff, call `execution_status` when available. Report actual successful skill loads, search/structural calls, fallback counts and RTK bytes. RTK is display-only; original logs remain authoritative. No output reduction is a valid observed result; do not invent a speed improvement.

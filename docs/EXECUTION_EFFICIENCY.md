@@ -33,6 +33,7 @@ python3 setup_execution_tools.py
 "execution": {
   "rtk": {"enabled": true, "profile": "safe-output"},
   "ast_grep": {"enabled": true},
+  "search": {"enabled": true},
   "worker_skill": true,
   "rust_skills": ["ownership", "error-handling", "concurrency"],
   "serena": {"mode": "off"},
@@ -93,3 +94,25 @@ python3 examples/execution-pilot/benchmark_tools.py --rtk <固定rtk路径> --as
 当前仍有其他本地任务活动，不能把真实小任务的墙钟时间当排除其他客户端干扰的 A/B。没有取得可靠端到端提速比例；不发布虚构百分比。Serena/browser保持关闭，待其独立隔离和实际任务对照完成后再决定开启。ACP/原生压缩策略本次保持，不将改变压缩策略的收益归给这些工具。
 
 真实小任务由Strata执行27项unittest，云端low独立审计提出证据manifest绑定缺口，同一worker新增补证、不改代码或伪造历史运行，再由原cloud low复审关闭。测试驱动器曾把RTK探针文件放进同一实施worktree，触发额外核对；已说明来源并改用独立探针worktree。这种驱动干扰不计为优化收益。
+
+## 结构化搜索与真实使用记录
+
+启用 `execution.search.enabled` 后，安装器查找 rg 并记录本机绝对路径；缺少 rg 会停止安装，不猜测 Desktop PATH。
+
+| 工具 | 使用时机 | 结果边界 |
+|---|---|---|
+| `execution_search`，`mode: files` | 先定位源文件 | 最多显示 256 路径，尊重 ignore，排除凭据和常见生成目录 |
+| `execution_search`，`mode: text` | 在明确路径内搜索字符串，默认 literal，可选 regex | 最多 64 个文件、每个 1MiB、合计 8MiB、显示 200 个匹配行；超限标记 incomplete |
+| `execution_ast_search` | Rust 等语法结构问题，提供明确文件 | 使用既有 ast-grep，不能用零匹配证明不存在 |
+| `execution_status` | 本地会话交付前 | 当前会话成功工具/技能调用、Shell 搜索回退和 RTK 显示字节 |
+
+推荐顺序是加载 `local-execution` → 文件定位 → 窄范围文本/结构检索 → 实施与原生测试 → 状态和证据交付。Shell 继续承担真实构建、测试和诊断，避免将源代码查询拼成 `cd && grep/find | head`。本地思考档位、云端会话模型继承和审计职责均保持原配置。
+
+所有搜索只读当前 linked worktree，并再次检查实际会话身份与原生 `read` 权限。禁止搜索原工程、凭据目录或借符号链接越界。文件数和匹配数受限时，必须收窄范围继续查找。工具不会自动放开仓库原有的 deny/ask。
+
+RTK 只过滤已完成搜索的显示文本；原始匹配结果私有保存，权限 0600，并返回路径。截断结果不进行 RTK 过滤；失败或没有足够缩减时保留原文。构建/测试/源码正文不交给过滤器。状态记录不保存搜索内容、源码、Shell 命令或凭据。
+
+状态是观测而非强制调度：可以证明工具确实调用过，不能保证模型每次都选最佳工具，也不能把显示字节节省等同于任务总耗时提升。旧会话未更新插件时不能追溯出新统计；原始工具回执仍为验收依据。
+
+
+2026-11-19 结构化搜索及云端工具检查见 [本次验证记录](validation/2026-11-19-structured-search.md)。其中明确区分自动测试、原生云端宿主兼容性、尚待空闲进行的 Strata 实测与全局应用；不要把插件安装或模型可见当成真实调用成功。
