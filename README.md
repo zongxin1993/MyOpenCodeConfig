@@ -252,3 +252,5 @@ Worktree 原工程访问已自动适配：同一仓库主 checkout 可通过原�
 ## 本地执行效率
 
 已加入统一的 execution 能力配置：RTK 输出后处理、ast-grep 只读结构搜索、local-execution 与精选 Rust 诊断技能。云端继承会话选择并规划/审计，固定本地模型实施/测试/修复。Serena/浏览器保存为关闭候选，未完成独立进程认证前不能启用。安装、配置、接管已有 RTK、证据与回滚见 [执行效率说明](docs/EXECUTION_EFFICIENCY.md)。
+
+执行者标识持久化、旧任务自动恢复和审计交接边界见 [执行会话续接与恢复](docs/WORKER_CONTINUITY.md)。当前会话路由模式下，修复委派可自动续接经过宿主核对的原 worker，不依赖模型在长对话中记住派发回执。

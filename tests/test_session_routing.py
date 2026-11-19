@@ -62,5 +62,5 @@ class SessionRoutingTests(unittest.TestCase):
     def test_real_javascript_routing_and_runtime_identity(self):
         node = shutil.which('node')
         self.assertIsNotNone(node, 'Node.js is required to verify the routing plugin')
-        run = subprocess.run([node, '--test', 'tests/test_session_router.mjs'], capture_output=True, text=True)
+        run = subprocess.run([node, '--test', 'tests/test_session_router.mjs', 'tests/test_worker_continuity.mjs'], capture_output=True, text=True)
         self.assertEqual(run.returncode, 0, run.stdout + run.stderr)

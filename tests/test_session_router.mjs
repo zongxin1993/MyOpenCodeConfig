@@ -8,9 +8,12 @@ function fixture() {
     ['review', { id: 'review', agent: 'cloud-review', parentID: 'root', model: { providerID: 'cloud', id: 'old' } }],
     ['local', { id: 'local', agent: 'local-worker', parentID: 'root', model: { providerID: 'local', id: 'fixed' } }],
   ]);
+  for (const session of sessions.values()) { session.projectID = "p"; session.location = { directory: "/private/tmp" }; }
+  const stored = new Map();
   const hooks = {};
   const ctx = { options: { cloudRoles: ['cloud-workflow', 'cloud-review'], localBindings: { 'local-worker': 'local/fixed' } },
-    session: { get: async ({ sessionID }) => { const value = sessions.get(sessionID); if (!value) throw Error('missing'); return value; },
+    storage: {get: async key => structuredClone(stored.get(key)), set: async (key,value) => stored.set(key,structuredClone(value))},
+    session: { list: async ({parentID}) => ({data:[...sessions.values()].filter(s=>s.parentID===parentID),cursor:{}}), get: async ({ sessionID }) => { const value = sessions.get(sessionID); if (!value) throw Error('missing'); return value; },
       hook: async (name, fn) => { hooks[name] = fn; } },
     tool: { hook: async (name, fn) => { hooks[name] = fn; } } };
   return { sessions, hooks, ctx };
