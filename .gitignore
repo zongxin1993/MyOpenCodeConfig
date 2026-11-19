@@ -26,3 +26,7 @@ __pycache__/
 .quality/
 quality-settings.json
 project-quality.local.json
+
+# Private implementation evidence
+.execution-evidence/
+.superpowers/

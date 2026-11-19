@@ -1,0 +1,67 @@
+{
+  "ast_grep": {
+    "redistribute": false,
+    "repository": "https://github.com/ast-grep/agent-skill",
+    "commit": "0613dc7f82bbfb3b557380b54726b92f73358460",
+    "files": {
+      "ast-grep/skills/ast-grep/SKILL.md": "a84b673582781080bc8b0424c7dff8fba53a26e53d64f78471e1e2a962452e70",
+      "ast-grep/skills/ast-grep/references/rule_reference.md": "9f6d2ba2f2dbde059f61f426c262abe943f548984496962c43c7cc6e44813ad6"
+    },
+    "version": "0.51.3",
+    "package": "@ast-grep/cli@0.51.3",
+    "integrity": "sha512-fjdWDDZcTCiUYt0yrHoZNmCRAP8QHKp++xKSLr0PrMqvk/m3v+543IWVvnJ5IcY9Lp0Z7bKSjP2/APZeypT/1g=="
+  },
+  "rust": {
+    "redistribute": false,
+    "repository": "https://github.com/actionbook/rust-skills",
+    "commit": "5c40d3ad785193231b7d0dbfb8e1eb447e5edd94",
+    "files": {
+      "skills/m01-ownership/SKILL.md": "cb4ebbeefbbace5f163cc51a0f693b7ee46980c0a1303c12525ee596d854c3b4",
+      "skills/m06-error-handling/SKILL.md": "9760e9433bfaacdecf320ed128bd32e72296386d757abeeaa1d53387da073185",
+      "skills/m07-concurrency/SKILL.md": "c2a3e990e34c45aad75a8acbc1c98658fe1021f0674b9662112060e388b56c5e"
+    }
+  },
+  "playwright": {
+    "redistribute": true,
+    "repository": "https://github.com/microsoft/playwright-cli",
+    "commit": "c872a33cec77fa03c28fa7c6d1ad99d15d04ce42",
+    "files": {
+      "skills/playwright-cli/SKILL.md": "1c4c34000f6102ee71fe91bf25351a221f7da37f48f2d556e1756f66e17d356f",
+      "skills/playwright-cli/references/element-attributes.md": "bf19aa4671e0a50a0fefa9c790f39124e803060eefe395042b723c29fcb7faa2",
+      "skills/playwright-cli/references/playwright-tests.md": "c5b0719fef2cfdff50bd744051b2f9afc119775db4b48e9b2882c1cf3886797c",
+      "skills/playwright-cli/references/pr-attachments.md": "24b118e74598be72e73e24fe223d295b9099c85b1860a7c8f6e5690c9038fa2a",
+      "skills/playwright-cli/references/request-mocking.md": "54e801c9663fc2b6d68ceb058cb1c360724c2499f42acc7852a68e83e5b5f37c",
+      "skills/playwright-cli/references/running-code.md": "eac97e0b77e723f8b1d7b64f276f92efa72f74453f45a805352d27ea1853a495",
+      "skills/playwright-cli/references/session-management.md": "2f4d953136cbfb998136095c064c38f4223ea049d6e13610e17db078dde8971c",
+      "skills/playwright-cli/references/storage-state.md": "71e90f774b5a7d61367f2336940f30be7c5693d43197b63d1154634b99ae5045",
+      "skills/playwright-cli/references/test-generation.md": "b9c5dda349a469b9abf9f10f3787135e6521f433f5743de399a164e14e76f7ce",
+      "skills/playwright-cli/references/tracing.md": "4e397e16e6bd92d8696cb815c4ee6dc4ce0be1da9e760e261a9c30b44c7857c7",
+      "skills/playwright-cli/references/video-recording.md": "1c800b897824cb54394c34265d8ebffdbb530adfc8d612c5d798b667a1799f48",
+      "LICENSE": "9a7110fc2d2f964038e5dc49128f908f29f47a574c961cba16085914e879cbda"
+    },
+    "version": "0.1.25",
+    "package": "@playwright/cli@0.1.25",
+    "integrity": "sha512-v1qjq3/ssK2lf9z/+Cu0gHGXm2uDgAQwq5fWPCBM1SxkJqcB0FOyvbbsTrpPn4j4WJey8bLTYT4tEB8o4FbwBw=="
+  },
+  "serena": {
+    "redistribute": true,
+    "repository": "https://github.com/oraios/serena",
+    "commit": "e14b02501da872394ada13f0b3f941056d462eee",
+    "files": {
+      "LICENSE": "6239f4be78ccff409aedfbce88ac89b26f488f76aac7ab199fb6876dc7fdeb4c",
+      "uv.lock": "d61cb6eeda90486990d295214bc70ea60ae3d55b6e5bb72d6d0f7ac7d459f265",
+      "pyproject.toml": "eda230592d3a8aeb7cf74c54a526f7bd13fd9c9462d057e2902297156f15ffe5"
+    }
+  },
+  "rtk": {
+    "redistribute": false,
+    "repository": "https://github.com/rtk-ai/rtk",
+    "commit": "e288a18c04452fd26192f59132e5324a8bb6924d",
+    "files": {
+      "LICENSE": "33f694a31d9f9df3e292a9413a3cdb0113fa72698e2c719f657ff6b53165dcc4",
+      "hooks/opencode/rtk.ts": "989e9231b0a28b538a88caf7c6d11327ebe07cbee6d41c84947fbb01d4898aa4"
+    },
+    "version": "1.2.0",
+    "adapter_sha256": "989e9231b0a28b538a88caf7c6d11327ebe07cbee6d41c84947fbb01d4898aa4"
+  }
+}

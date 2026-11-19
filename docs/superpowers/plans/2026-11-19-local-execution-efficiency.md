@@ -6,7 +6,7 @@
 **Architecture:** 复用现有纯配置生成、受管状态、事务备份和不可变运行时。以 execution 字段选择能力，CLI 和 MCP 使用不同权限适配，技能按需加载。
 **Tech Stack:** Python 配置器、OpenCode V2 Promise plugin、Node.js、固定上游 CLI/skill、stdio MCP。
 **Spec:** ../specs/2026-11-19-local-execution-efficiency-design.md
-**Status:** 可评审草案；需求来自本次会话，设计和实施计划尚未得到执行批准。未安装、部署、压测或推送本计划。
+**Status:** 用户于2026-11-19明确批准“开始执行任务，云端还是用 low 模型，最后上传到 github”。基础能力已实施，真实验证与发布记录见 docs/EXECUTION_EFFICIENCY.md。Serena/browser未通过独立认证，保留off；不标记为已验收能力。
 
 ## Global Constraints
 
@@ -152,3 +152,8 @@ A：任务1–4，基础输出过滤+结构搜索+执行/诊断协议；B：任�
 - OpenCode V2权限与MCP：https://opencode.ai/docs/permissions/ 、 https://opencode.ai/docs/mcp-servers/
 
 本计划经过一个独立Codex审阅者检查并复核，当前未发现新的文档阻塞项；已纳入工具入口权限、完整RTK发现范围、每目标并发安全恢复、传递依赖锁、进程生命周期及收窄对照实验等反馈。这是文档审阅，不是OpenCode OAuth真实运行验收，也不是用户实施批准。
+
+
+## 实施记录
+
+已按独立审阅修复安装并发恢复、活动工具staging安装、完整RTK发现、受管技能修改保护及AST权限等待文件身份问题。上游技能许可不明确，改为原创短适配并保留固定来源；这项调整已记录，不伪称分发官方完整技能。CLI样本对照已完成；有其他本地客户端活动，端到端A/B不具备排除干扰条件，未声称稳定提速。高级能力预检失败关闭是本计划的发布边界，不是该能力安全验收通过。

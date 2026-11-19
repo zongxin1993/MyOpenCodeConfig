@@ -59,3 +59,6 @@ macOS 的模型 shell 在创建时切换到同方言名的隔离启动器，内�
 - 确认 worker 实际目录为 linked worktree、模型为固定本地，无新增命名推理档位；真实运行项目检查。
 - 云端读取当前源码/测试与执行证据，有问题交回原 worker 修复、复验和复审。
 - 原 checkout 的 HEAD、状态和源码内容保持；没有把 idle、READY 或工具加载当成最终完成。
+
+
+本地执行能力的统一配置、受管技能、RTK 接管及可选进程限制见 [EXECUTION_EFFICIENCY.md](EXECUTION_EFFICIENCY.md)。

@@ -93,3 +93,6 @@ code-review-and-quality
 ## 质量扩展技能与BMAD
 
 quality-planning / quality-review 来自本仓库，由 setup_quality.py 安装并保留完整运行目录。BMAD审计上游来源、精确提交、渲染依赖见 integrations/bmad/lock.json；不会把原始BMAD技能全局自动激活。完整步骤见 QUALITY_WORKFLOW.md。不要混用稳定v6.12安装器与本扩展固定的v7预览资源。
+
+
+本地执行能力的统一配置、受管技能、RTK 接管及可选进程限制见 [EXECUTION_EFFICIENCY.md](EXECUTION_EFFICIENCY.md)。

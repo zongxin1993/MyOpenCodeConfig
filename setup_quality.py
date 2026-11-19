@@ -89,8 +89,10 @@ def prepare_runtime(source, render_python, destination):
     if release.exists(): raise ValueError('Incomplete runtime directory; inspect before retrying')
     release.mkdir(parents=True)
     try:
-        for folder in ['workflow', 'schemas', 'examples', 'integrations', 'plugins']:
+        for folder in ['workflow', 'schemas', 'examples', 'integrations', 'plugins', 'skills']:
             shutil.copytree(ROOT / folder, release / folder, ignore=shutil.ignore_patterns('__pycache__', '*.pyc'))
+        for name in ['configure.py','templates.json']:
+            shutil.copy2(ROOT/name,release/name)
         # Keep complete supporting BMAD resources, never merely SKILL.md.
         for sub in ['skills/method/bmad-code-review', 'skills/core-tools/bmad/scripts']:
             shutil.copytree(source / sub, release / 'upstream/bmad' / sub,
@@ -141,6 +143,12 @@ def install(args):
 
 def _install(args):
     home = args.root.expanduser().resolve()
+    from workflow.execution_setup import content,digest
+    observed={}
+    def observe(path):
+        path=Path(path);observed.setdefault(path,digest(content(path)))
+    for fixed in [home/'.config/opencode/opencode.json',home/'.config/opencode/.workflow-generated-state.json',home/'.config/opencode-quality/settings.json',home/'.plannotator/config.json',home/'.config/opencode/opencode-quota/settings.jsonc']:
+        observe(fixed)
     config = home / '.config/opencode/opencode.json'; state = config.parent / '.workflow-generated-state.json'
     private = home / '.config/opencode-quality/settings.json'
     settings = read_json(private) if private.exists() else {'projects': []}
@@ -149,21 +157,40 @@ def _install(args):
         integration = {'mode': 'repository-native', 'authorities': args.authority,
                        'instructions': args.native_instructions.read_text()}
     settings = merge_registration(settings, args.project, read_json(args.policy) if args.policy else None, integration)
-    base = read_json(config); raw = config.read_bytes(); models = read_json(args.models)
+    base = read_json(config); raw_config = config.read_bytes(); models = read_json(args.models)
     templates = read_json(ROOT / 'templates.json')
     previous = read_json(state) if state.exists() else None
     compiled, generated = configure.compile_config(base, models, templates, previous)
     preferences = plugin_preferences(home, models)
+    from integrations.execution import parse_execution
+    from workflow.execution_setup import plan_execution, FileTransaction, verify_owned_files, execution_skill_changes
+    verify_owned_files((previous or {}).get('execution_skill_files',{}))
+    execution_options=parse_execution(models.get('execution'))
+    execution_plan=plan_execution(home,execution_options,read_json(ROOT/'integrations/execution.lock.json'),[p['root'] for p in settings['projects']])
+    for plugin in compiled.get('plugins',[]):
+        package=plugin if isinstance(plugin,str) else plugin.get('package','')
+        if execution_options['rtk']['enabled'] and 'rtk' in package.lower() and 'execution-tools' not in package:raise ValueError('RTK package collision; reconcile before execution setup')
+
     targets = [home / '.agents/skills' / name for name in ['quality-planning', 'quality-review']]
-    for target in targets: preflight_skill(target)
+    execution_targets=[home/'.agents/skills'/name for name in execution_plan['skills']]
+    for target in targets:
+        observe(target/'SKILL.md');preflight_skill(target)
+    for target in execution_targets:
+        for source in (ROOT/'skills'/target.name).rglob('*'):
+            if source.is_file():observe(target/source.relative_to(ROOT/'skills'/target.name))
+        if target.is_symlink() or target.exists() and ('Managed-By: MyOpenCodeConfig execution' not in (target/'SKILL.md').read_text()):raise ValueError('Foreign execution skill collision: '+target.name)
+
+    execution_changes=execution_skill_changes(home,execution_plan['skills'],ROOT,(previous or {}).get('execution_skill_files',{}))
     servers = compiled.setdefault('mcp', {}).setdefault('servers', {})
+    for p in execution_plan['remove']:observe(p)
+    for p in (previous or {}).get('execution_skill_files',{}):observe(p)
     old_server = servers.get('quality')
     if old_server and 'myopencodeconfig/quality' not in str(old_server.get('cwd', '')):
         raise ValueError('Foreign MCP quality server already exists')
     # Validate the whole managed config before preparing/installing anything active.
     if not args.apply:
         return {'applied': False, 'projects': [p['root'] for p in settings['projects']],
-                'roles': generated['roles'], 'source_pin': read_json(ROOT / 'integrations/bmad/lock.json')['commit']}
+                'roles': generated['roles'], 'execution':execution_plan, 'source_pin': read_json(ROOT / 'integrations/bmad/lock.json')['commit']}
     release, rendered = prepare_runtime(args.source, args.render_python,
                                         home / '.local/share/myopencodeconfig/quality')
     if 'routing_plugin' in generated:
@@ -180,7 +207,12 @@ def _install(args):
             for entry in compiled.get('plugins', []):
                 if isinstance(entry, dict) and entry.get('package') == old_package: entry['package'] = package
             plugin['package'] = package
+    if 'execution_plugin' in generated:
+        entry=generated['execution_plugin'];old_package=entry['package'];entry['package']=str(release/'plugins/execution-tools');entry['options']['tools']=execution_plan['tools']
+        for plugin in compiled.get('plugins',[]):
+            if isinstance(plugin,dict) and plugin.get('package')==old_package:plugin.update(copy.deepcopy(entry))
     for project in settings['projects']:
+
         for lane in project.get('policy', {}).get('lanes', []):
             lane['argv'] = [arg.replace('__QUALITY_RUNTIME__', str(release)) for arg in lane['argv']]
     Runtime(settings)
@@ -194,43 +226,27 @@ def _install(args):
         text = (ROOT / 'skills' / target.name / 'SKILL.md').read_text()
         for token, value in substitutions.items(): text = text.replace(token, value)
         skill_texts[target.name] = text
-    if (compiled == base and generated == previous and private.exists() and read_json(private) == settings
-            and all(p.exists() and read_json(p) == values for p, values in preferences.items())
-            and all((target / 'SKILL.md').is_file() and (target / 'SKILL.md').read_text() == skill_texts[target.name] for target in targets)):
-        return {'applied': False, 'changed': False, 'runtime': str(release), 'projects': [p['root'] for p in settings['projects']]}
     stamp = datetime.now(timezone.utc).strftime('%Y%m%dT%H%M%S%fZ')
-    backup = config.parent / 'backups' / ('quality-workflow-' + stamp); backup.mkdir(parents=True, mode=0o700)
-    destinations = [config, state, private] + targets + list(preferences)
-    manifest = []
-    for i, target in enumerate(destinations):
-        item = {'path': str(target), 'existed': target.exists(), 'backup': str(backup / str(i))}
-        if target.exists():
-            if target.is_dir(): shutil.copytree(target, backup / str(i))
-            else: shutil.copy2(target, backup / str(i)); (backup / str(i)).chmod(0o600)
-        manifest.append(item)
-    (backup / 'manifest.json').write_text(json.dumps(manifest, indent=2) + '\n')
-    if config.read_bytes() != raw: raise ValueError('Config changed concurrently; no active files written')
-    try:
-        for target in targets:
-            target.mkdir(parents=True, exist_ok=True)
-            configure.atomic_write(target / 'SKILL.md', skill_texts[target.name].encode())
-        private.parent.mkdir(parents=True, exist_ok=True)
-        for target, data in preferences.items():
-            target.parent.mkdir(parents=True, exist_ok=True)
-            configure.atomic_write(target, (json.dumps(data, ensure_ascii=False, indent=2) + '\n').encode())
-        for target, data in [(private, settings), (state, generated), (config, compiled)]:
-            configure.atomic_write(target, (json.dumps(data, ensure_ascii=False, indent=2) + '\n').encode())
-    except BaseException:
-        for item in reversed(manifest):
-            target = Path(item['path']); saved = Path(item['backup'])
-            if item['existed']:
-                if target.is_dir(): shutil.rmtree(target)
-                if saved.is_dir(): shutil.copytree(saved, target)
-                else: shutil.copy2(saved, target)
-            elif target.exists():
-                if target.is_dir(): shutil.rmtree(target)
-                else: target.unlink()
-        raise
+    backup=config.parent/'backups'/('quality-workflow-'+stamp)
+    changes={}
+    for target,text in skill_texts.items():changes[home/'.agents/skills'/target/'SKILL.md']=text.encode()
+    changes.update(execution_changes)
+    # Remove only previously owned execution skill bytes; keep any external additions.
+    current_skill_paths={str(p) for p in changes if '/.agents/skills/' in str(p)}
+    for p,expected in (previous or {}).get('execution_skill_files',{}).items():
+        if p not in current_skill_paths:
+            target=Path(p)
+            if target.exists() and hashlib.sha256(target.read_bytes()).hexdigest()!=expected:raise ValueError('Managed skill modified externally: '+p)
+            changes[target]=None
+    generated['execution_skill_files']={str(p):hashlib.sha256(raw).hexdigest() for p,raw in changes.items() if raw is not None and any(str(p).startswith(str(t)+'/') for t in execution_targets)}
+    for p in execution_plan['remove']:changes[Path(p)]=None
+    for target,data in preferences.items():changes[target]=(json.dumps(data,ensure_ascii=False,indent=2)+'\n').encode()
+    for target,data in [(private,settings),(state,generated),(config,compiled)]:changes[target]=(json.dumps(data,ensure_ascii=False,indent=2)+'\n').encode()
+    from workflow.execution_setup import content
+    if all(content(p)==raw for p,raw in changes.items()):return {'applied':False,'changed':False,'runtime':str(release)}
+    tx=FileTransaction(backup,changes,expected=observed);tx.prepare()
+    if config.read_bytes()!=raw_config:raise ValueError('Config changed concurrently; no active files written')
+    tx.commit()
     return {'applied': True, 'backup': str(backup), 'runtime': str(release),
             'bmad': rendered, 'projects': [p['root'] for p in settings['projects']],
             'config_sha256': hashlib.sha256(config.read_bytes()).hexdigest()}

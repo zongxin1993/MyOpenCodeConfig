@@ -1,0 +1,6 @@
+{
+  "mode": "playwright-cli",
+  "enabled_by_default": false,
+  "status": "requires-independent-certification",
+  "requirements": ["pinned browser revision and runtime", "isolated owned browser profile and worktree-specific session", "sandboxed browser daemon and child processes", "no personal browser/cookies", "owned lifecycle cleanup without global kill-all", "real UI fixture with failure paths and original artifacts"]
+}

@@ -101,3 +101,14 @@ python3 configure.py --models models.local.json
 真实 OpenCode 测试选择云端 gpt-6.1-sol#low，未更改日常默认：当前真实任务 worktree 的原工程 read（此前 external_directory 拒绝）已成功；一次性工程原文件可读，worktree 文档原生 patch 成功。插件初始化后的原生 shell 另测相对路径和变量写回退出 1，worktree 写入退出 0，原文件内容保持。模型主动拒绝尝试的原目录文档写入、假 .env、grep 和无关目录读取，不冒充实际工具拒绝；这些文件权限负例另由确定性 hook/规则测试验证。
 
 调试时还发现底层 shell API 在未初始化该 location 插件时不运行钩子；这条通道不是模型会话的权限认证路径。实际模型会话先初始化插件。详见 PLUGIN_INTEGRATION.md 的保护范围和共享 Git 元数据例外。实际业务工程未运行开发、测试或迁移未提交源码；测试数据和原始会话只留本机。备份后部署，原有 Provider、上下文压缩、云/本地默认绑定与命名推理档位另作一致性比较。
+
+
+## 执行效率能力集成
+
+基础范围增加RTK输出后处理、AST显式文件只读搜索和短执行/Rust诊断技能。完整Python回归包含新增Node套件；本机提供固定CLI路径时，真实ast-grep/RTK测试不skip。CI没有本机CLI环境变量时两个额外真实CLI用例跳过，不能冒充CI已经运行这些本机工具。安装事务、并发修改、损坏备份、技能新增资源碰撞、staging故障和重复发现入口均有行为负例。
+
+实际Desktop验证包含源码搜索、绝对read deny、越界/.env拒绝、原始RTK日志及短入口配置。云端主会话和审阅者实际均为openai/gpt-6.1-sol#low，本地worker保持固定Strata、无新增命名variant。小任务27项unittest GREEN后，云端NEEDS_EVIDENCE交回原worker补证，再由原审阅者复核关闭。配置代码另经真实low审阅，发现技能资源覆盖、RTK日志参数边界、测试未达失败分支等问题，已逐项补负例修复并交回同一审查者。
+
+只声明CLI级三轮观测；其他客户端仍活动，没有可靠的端到端A/B提速比例。Serena/browser仍属未认证off候选，未使用完整BMAD sibling验收冒充这些能力已通过。详见EXECUTION_EFFICIENCY.md。未变更ACP/原生压缩策略和Strata服务参数，原配置工程checkout源码保持。
+
+最终本机回归：91项Python unittest全部通过；新执行工具Node套件8项通过、0 skip，含固定ast-grep/RTK真实CLI。生效配置重复apply返回changed:false。默认启动模型、Provider、压缩和本地绑定按任务开始前备份比对恢复/保持一致。

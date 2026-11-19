@@ -1,6 +1,8 @@
 {
   "version": 1,
-  "routing": { "cloud_model": "session" },
+  "routing": {
+    "cloud_model": "session"
+  },
   "extensions": {
     "context7": true,
     "quota": true,
@@ -19,5 +21,26 @@
       "variant": null
     }
   },
-  "roles": {}
+  "roles": {},
+  "execution": {
+    "rtk": {
+      "enabled": true,
+      "profile": "safe-output"
+    },
+    "ast_grep": {
+      "enabled": true
+    },
+    "worker_skill": true,
+    "rust_skills": [
+      "ownership",
+      "error-handling",
+      "concurrency"
+    ],
+    "serena": {
+      "mode": "off"
+    },
+    "browser": {
+      "mode": "off"
+    }
+  }
 }

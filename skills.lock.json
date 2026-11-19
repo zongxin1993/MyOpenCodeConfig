@@ -14,5 +14,20 @@
   "bmad": {
     "repository": "https://github.com/bmad-code-org/BMAD-METHOD.git",
     "commit": "e435a22574fe55722841086e5566420178b98df3"
+  },
+  "execution-ast_grep": {
+    "repository": "https://github.com/ast-grep/agent-skill.git",
+    "commit": "0613dc7f82bbfb3b557380b54726b92f73358460",
+    "mode": "original-adapter"
+  },
+  "execution-rust": {
+    "repository": "https://github.com/actionbook/rust-skills.git",
+    "commit": "5c40d3ad785193231b7d0dbfb8e1eb447e5edd94",
+    "mode": "original-adapter"
+  },
+  "execution-playwright": {
+    "repository": "https://github.com/microsoft/playwright-cli.git",
+    "commit": "c872a33cec77fa03c28fa7c6d1ad99d15d04ce42",
+    "mode": "optional-official-resource"
   }
 }

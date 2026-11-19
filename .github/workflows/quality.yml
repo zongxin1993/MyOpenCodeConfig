@@ -15,4 +15,4 @@ jobs:
       - name: Run portable regression suite
         run: python3 -m unittest discover -s tests -v
       - name: Compile Python modules
-        run: python3 -m compileall -q workflow configure.py setup_quality.py
+        run: python3 -m compileall -q workflow integrations configure.py setup_quality.py setup_execution_tools.py

@@ -1,0 +1,8 @@
+{
+  "mode": "symbols-readonly",
+  "enabled_by_default": false,
+  "status": "requires-independent-certification",
+  "allowed_tools": ["find_symbol", "get_symbols_overview", "find_referencing_symbols"],
+  "forbidden_tools": ["replace_symbol_body", "rename_symbol", "execute_shell_command", "write_memory", "onboarding", "repl"],
+  "requirements": ["pinned Python dependency environment and language server", "sandboxed worktree-specific MCP and child processes", "native per-file read deny/ask enforcement", "owned process lifecycle and private cache", "real-symbol benchmark and source-write rejection"]
+}

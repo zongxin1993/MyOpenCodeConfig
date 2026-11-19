@@ -1,0 +1,3 @@
+# Preserve upstream resources byte-for-byte for pinned SHA256 verification.
+integrations/execution-upstream/** -text
+integrations/execution-upstream/playwright/LICENSE whitespace=cr-at-eol

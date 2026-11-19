@@ -247,3 +247,8 @@ python3 -m unittest discover -s tests -v
 
 
 Worktree 原工程访问已自动适配：同一仓库主 checkout 可通过原生 `read` 只读核对，开发与测试留在 linked worktree。原工程写回被阻断，敏感读取和搜索另有限制；macOS shell 使用系统沙箱，保留原命令权限检查。共享 Git 元数据例外、跨目录硬链接和其他平台支持范围见 [插件集成说明](docs/PLUGIN_INTEGRATION.md#worktree-规则)。
+
+
+## 本地执行效率
+
+已加入统一的 execution 能力配置：RTK 输出后处理、ast-grep 只读结构搜索、local-execution 与精选 Rust 诊断技能。云端继承会话选择并规划/审计，固定本地模型实施/测试/修复。Serena/浏览器保存为关闭候选，未完成独立进程认证前不能启用。安装、配置、接管已有 RTK、证据与回滚见 [执行效率说明](docs/EXECUTION_EFFICIENCY.md)。

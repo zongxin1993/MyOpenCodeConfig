@@ -135,7 +135,7 @@ Before subagent use 待派发. Say 已派发 only after a real successful tool r
 
 
 def compile_config(base, spec, templates, previous=None):
-    require(isinstance(spec,dict) and not set(spec)-{'version','defaults','roles','routing','extensions'},'Unknown specification fields')
+    require(isinstance(spec,dict) and not set(spec)-{'version','defaults','roles','routing','extensions','execution'},'Unknown specification fields')
     require(spec.get('version')==1,'Unsupported version')
     routing=spec.get('routing',{})
     require(isinstance(routing,dict) and not set(routing)-{'cloud_model'},'Unknown routing fields')
@@ -170,6 +170,8 @@ def compile_config(base, spec, templates, previous=None):
     state={'version':1,'variants':[],'roles':{role:reference(b) for role,b in bindings.items()},'permissions':{}}
     original_templates=templates
     templates=extensions_config(out,state,previous,spec,templates)
+    from integrations.execution import configure_execution
+    templates=configure_execution(out,state,previous,spec,templates,ROOT)
     owned=(previous or {}).get('routing_plugin')
     if owned:
         plugins=out.get('plugins',[])
