@@ -1,5 +1,6 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
+import { tmpdir } from 'node:os';
 import plugin from '../plugins/cloud-session-router/index.js';
 
 function fixture() {
@@ -8,7 +9,7 @@ function fixture() {
     ['review', { id: 'review', agent: 'cloud-review', parentID: 'root', model: { providerID: 'cloud', id: 'old' } }],
     ['local', { id: 'local', agent: 'local-worker', parentID: 'root', model: { providerID: 'local', id: 'fixed' } }],
   ]);
-  for (const session of sessions.values()) { session.projectID = "p"; session.location = { directory: "/private/tmp" }; }
+  for (const session of sessions.values()) { session.projectID = "p"; session.location = { directory: tmpdir() }; }
   const stored = new Map();
   const hooks = {};
   const ctx = { options: { cloudRoles: ['cloud-workflow', 'cloud-review'], localBindings: { 'local-worker': 'local/fixed' } },
